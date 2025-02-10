@@ -25,7 +25,7 @@ export class CarsController {
     description: 'Return all cars.',
     type: [CreateCarDto],
   })
-  @ApiQuery({ name: 'search', required: false })
+  @ApiQuery({ name: 'licensePlate', required: false })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiQuery({ name: 'index', required: false, type: Number })
   @ApiQuery({ name: 'order', required: false })
@@ -40,7 +40,7 @@ export class CarsController {
     const data = await this.carsService.findAll(
       search,
       limit,
-      index,
+      index - 1,
       order,
       sort,
     );
