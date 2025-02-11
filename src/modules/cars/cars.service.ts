@@ -4,9 +4,9 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Car, CarDocument } from './car.schema';
+import { Car, CarDocument } from './schema/car.schema';
 import { Model } from 'mongoose';
-import { CreateCarDto } from './create-car.dto';
+import { CreateCarDto } from './dto/create-car.dto';
 
 @Injectable()
 export class CarsService {

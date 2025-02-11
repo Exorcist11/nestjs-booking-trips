@@ -10,8 +10,8 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CarsService } from './cars.service';
-import { CreateCarDto } from './create-car.dto';
-import { Car } from './car.schema';
+import { CreateCarDto } from './dto/create-car.dto';
+import { Car } from './schema/car.schema';
 
 @ApiTags('Cars')
 @Controller('cars')
@@ -31,7 +31,7 @@ export class CarsController {
   @ApiQuery({ name: 'order', required: false })
   @ApiQuery({ name: 'sort', required: false })
   async getAllCars(
-    @Query('search') search?: string,
+    @Query('licensePlate') search?: string,
     @Query('limit') limit?: number,
     @Query('index') index?: number,
     @Query('order') order?: string,
