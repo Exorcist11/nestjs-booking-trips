@@ -6,7 +6,7 @@ import {
 import { User, UserDocument } from './schema/user.schema';
 import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
-
+import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class UsersService {
@@ -40,6 +40,12 @@ export class UsersService {
     if (existingEmail) {
       throw new ConflictException('Email already exists');
     }
+
+    const salt = await bcrypt.genSalt(11);
+    const hashedPassword = await bcrypt.hash(user.password, salt);
+
+    user.password = hashedPassword;
+
     const newUser = new this.userModel(user);
     return newUser.save();
   }

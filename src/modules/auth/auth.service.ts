@@ -1,4 +1,3 @@
-import { CurrentUser } from './decorators/current-user.decorator';
 import {
   ConflictException,
   Injectable,

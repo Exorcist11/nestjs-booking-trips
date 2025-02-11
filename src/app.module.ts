@@ -12,10 +12,10 @@ import { AuthModule } from './modules/auth/auth.module';
     MongooseModule.forRoot(
       'mongodb+srv://root:nothing123@nothing.vdgps.mongodb.net/booking_trips?retryWrites=true&w=majority&appName=Nothing',
     ),
+    AuthModule,
     TripsModule,
     CarsModule,
     UsersModule,
-    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],
