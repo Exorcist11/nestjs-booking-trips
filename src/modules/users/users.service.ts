@@ -1,7 +1,12 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { User, UserDocument } from './schema/user.schema';
 import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
+
 
 @Injectable()
 export class UsersService {
@@ -35,7 +40,17 @@ export class UsersService {
     if (existingEmail) {
       throw new ConflictException('Email already exists');
     }
-    const newCar = new this.userModel(user);
-    return newCar.save();
+    const newUser = new this.userModel(user);
+    return newUser.save();
+  }
+
+  async findById(userId: string): Promise<User> {
+    const existUser = await this.userModel.findById(userId).exec();
+
+    if (!existUser) {
+      throw new NotFoundException('User not found');
+    }
+
+    return existUser;
   }
 }
