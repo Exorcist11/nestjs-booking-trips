@@ -7,6 +7,7 @@ import { User, UserDocument } from './schema/user.schema';
 import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import * as bcrypt from 'bcryptjs';
+import { CreateUserDto } from './dto/create-user.dto';
 
 @Injectable()
 export class UsersService {
@@ -58,5 +59,21 @@ export class UsersService {
     }
 
     return existUser;
+  }
+
+  async updateUser(id: string, updateDto: CreateUserDto): Promise<User> {
+    await this.findById(id);
+    const updateUser = await this.userModel
+      .findByIdAndUpdate(id, { $set: updateDto }, { new: true })
+      .exec();
+    return updateUser;
+  }
+
+  async deleteUser(id: string): Promise<User> {
+    const exitsUser = await this.userModel.findByIdAndDelete(id).exec();
+    if (!exitsUser) {
+      throw new NotFoundException('User not found');
+    }
+    return exitsUser;
   }
 }
