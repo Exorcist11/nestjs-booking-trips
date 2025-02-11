@@ -1,7 +1,6 @@
 import { Body, Controller, Get, Post } from '@nestjs/common';
 import { TripsService } from './trips.service';
-import { Trip } from './trip.schema';
-import { ApiTags, ApiOperation, ApiResponse  } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { CreateTripDto } from './create-trip.dto';
 
 @ApiTags('Trips')
@@ -10,6 +9,7 @@ export class TripsController {
   constructor(private readonly tripsService: TripsService) {}
 
   @Get()
+  @ApiOperation({ summary: 'Get all trips' })
   getAllTrips() {
     return this.tripsService.findAll();
   }
