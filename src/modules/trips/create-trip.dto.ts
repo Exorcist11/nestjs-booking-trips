@@ -1,5 +1,4 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Types } from 'mongoose';
 
 export class CreateTripDto {
   @ApiProperty({ example: 'Hồ Chí Minh', description: 'Điểm khởi hành' })
@@ -19,10 +18,4 @@ export class CreateTripDto {
 
   @ApiProperty({ example: 40, description: 'Số ghế trống', default: 40 })
   availableSeats: number;
-
-  @ApiProperty({
-    example: '65fa1c9e1234567890abcdef',
-    description: 'ID của xe khách',
-  })
-  car: Types.ObjectId;
 }
