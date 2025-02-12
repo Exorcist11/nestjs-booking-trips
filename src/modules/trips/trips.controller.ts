@@ -11,7 +11,7 @@ import {
 import { TripsService } from './trips.service';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { CreateTripDto } from './dto/create-trip.dto';
-import { DESCRIPTION_MESSAGE } from 'src/constants/description-response';
+import { DESCRIPTION_MESSAGE } from 'src/modules/constants/description-response';
 
 @ApiTags('Trips')
 @Controller('trips')
