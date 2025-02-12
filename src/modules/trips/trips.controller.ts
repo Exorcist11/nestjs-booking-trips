@@ -9,7 +9,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { TripsService } from './trips.service';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { CreateTripDto } from './dto/create-trip.dto';
 import { DESCRIPTION_MESSAGE } from 'src/constants/description-response';
 
@@ -21,8 +21,34 @@ export class TripsController {
   @Get()
   @ApiOperation({ summary: 'Get all trips' })
   @ApiResponse({ status: 200, description: DESCRIPTION_MESSAGE[200] })
-  getAllTrips() {
-    return this.tripsService.findAll();
+  @ApiQuery({ name: 'destination', required: false })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'index', required: false, type: Number })
+  @ApiQuery({ name: 'order', required: false })
+  @ApiQuery({ name: 'sort', required: false })
+  getAllTrips(
+    @Query('destination') search?: string,
+    @Query('limit') limit?: number,
+    @Query('index') index?: number,
+    @Query('order') order?: string,
+    @Query('sort') sort?: string,
+  ) {
+    const data = this.tripsService.findAll(
+      search,
+      limit,
+      index - 1,
+      order,
+      sort,
+    );
+
+    return {
+      data,
+      search,
+      limit: limit || 10,
+      index: index || 1,
+      order,
+      sort,
+    };
   }
 
   @Get('/getTripById')

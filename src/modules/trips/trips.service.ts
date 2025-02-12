@@ -12,8 +12,25 @@ export class TripsService {
     @InjectModel(Car.name) private carModel: Model<CarDocument>,
   ) {}
 
-  async findAll(): Promise<Trip[]> {
-    return this.tripModel.find().populate('car').exec();
+  async findAll(
+    search?: string,
+    limit = 10,
+    index = 0,
+    order = 'asc',
+    sort = '_id',
+  ): Promise<Trip[]> {
+    const filter = search
+      ? { departure: { $regex: search, $options: 'i' } }
+      : {};
+
+    const sortOrder = order === 'asc' ? 1 : -1;
+    return this.tripModel
+      .find(filter)
+      .sort({ [sort]: sortOrder })
+      .skip(index)
+      .limit(limit)
+      .populate('car')
+      .exec();
   }
 
   async create(createTripDto: CreateTripDto): Promise<Trip> {
