@@ -7,12 +7,20 @@ import { CarsModule } from './modules/cars/cars.module';
 import { UsersModule } from './modules/users/users.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { CloudinaryModule } from './modules/cloudinary/cloudinary.module';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 
 @Module({
   imports: [
-    MongooseModule.forRoot(
-      'mongodb+srv://root:nothing123@nothing.vdgps.mongodb.net/booking_trips?retryWrites=true&w=majority&appName=Nothing',
-    ),
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
+    MongooseModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: async (config: ConfigService) => ({
+        uri: config.get<string>('DATABASE_URL'),
+      }),
+      inject: [ConfigService],
+    }),
     AuthModule,
     TripsModule,
     CarsModule,
