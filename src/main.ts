@@ -14,7 +14,7 @@ async function bootstrap() {
     .setTitle('Booking Trips API')
     .setDescription('API documentation for Booking Trips')
     .setVersion('1.0')
-    .addTag('API')
+    // .addTag('API')
     .addBearerAuth()
     .build();
 

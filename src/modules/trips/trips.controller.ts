@@ -20,20 +20,26 @@ export class TripsController {
   @Get()
   @ApiOperation({ summary: 'Get all trips' })
   @ApiResponse({ status: 200, description: 'Success' })
+  @ApiQuery({ name: 'departure', required: false })
   @ApiQuery({ name: 'destination', required: false })
+  @ApiQuery({ name: 'departureTime', required: false })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiQuery({ name: 'index', required: false, type: Number })
   @ApiQuery({ name: 'order', required: false })
   @ApiQuery({ name: 'sort', required: false })
   async getAllTrips(
-    @Query('destination') search?: string,
+    @Query('departure') departure?: string,
+    @Query('destination') destination?: string,
+    @Query('departureTime') departureTime?: Date,
     @Query('limit') limit?: number,
     @Query('index') index?: number,
     @Query('order') order?: 'asc' | 'desc',
     @Query('sort') sort?: string,
   ) {
     const data = await this.tripsService.findAll(
-      search,
+      departure,
+      destination,
+      departureTime,
       limit,
       index,
       order,
@@ -42,7 +48,8 @@ export class TripsController {
 
     return {
       data,
-      search,
+      destination,
+      departureTime,
       limit: limit || 10,
       index: index || 1,
       order,

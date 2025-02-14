@@ -5,6 +5,12 @@ import { Trip, TripDocument } from './schema/trip.schema';
 import { CreateTripDto } from './dto/create-trip.dto';
 import { Car, CarDocument } from '../cars/schema/car.schema';
 
+interface TripFilter {
+  departure?: { $regex: string; $options: string };
+  destination?: { $regex: string; $options: string };
+  departureTime?: { $eq: Date };
+}
+
 @Injectable()
 export class TripsService {
   constructor(
@@ -13,15 +19,26 @@ export class TripsService {
   ) {}
 
   async findAll(
-    search?: string,
-    limit = 10,
-    index = 0,
+    departure?: string,
+    destination?: string,
+    departureTime?: Date,
+    limit: number = 10,
+    index: number = 0,
     order: 'asc' | 'desc' = 'asc',
     sort = '_id',
   ): Promise<Trip[]> {
-    const filter = search
-      ? { departure: { $regex: search, $options: 'i' } }
-      : {};
+    const filter: TripFilter = {};
+    if (departure) {
+      filter.departure = { $regex: departure, $options: 'i' };
+    }
+
+    if (destination) {
+      filter.destination = { $regex: destination, $options: 'i' };
+    }
+
+    if (departureTime) {
+      filter.departureTime = { $eq: new Date(departureTime) };
+    }
 
     const sortOrder = order === 'asc' ? 1 : -1;
 
@@ -32,7 +49,7 @@ export class TripsService {
       .limit(limit)
       .populate('car')
       .exec();
-   
+
     return trips;
   }
 
