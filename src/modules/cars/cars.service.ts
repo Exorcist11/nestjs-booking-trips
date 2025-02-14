@@ -6,7 +6,6 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Car, CarDocument } from './schema/car.schema';
 import { Model } from 'mongoose';
-import { CreateCarDto } from './dto/create-car.dto';
 
 @Injectable()
 export class CarsService {
@@ -40,6 +39,7 @@ export class CarsService {
     if (existingCar) {
       throw new ConflictException('License plate already exists');
     }
+    car.seatingCapacity = car.seats.length;
     const newCar = new this.carModel(car);
     return newCar.save();
   }
@@ -52,11 +52,17 @@ export class CarsService {
     return existingCar;
   }
 
-  async update(id: string, updateCarDto: CreateCarDto): Promise<Car> {
+  async update(id: string, updateCarDto: Car): Promise<Car> {
     await this.findOne(id);
+
+    if (updateCarDto.seats) {
+      updateCarDto.seatingCapacity = updateCarDto.seats.length;
+    }
+
     const updateCar = await this.carModel
       .findByIdAndUpdate(id, { $set: updateCarDto }, { new: true })
       .exec();
+
     return updateCar;
   }
 

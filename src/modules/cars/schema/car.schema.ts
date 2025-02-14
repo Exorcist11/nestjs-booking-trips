@@ -16,7 +16,7 @@ export class Car {
   phoneNumber: string;
 
   @Prop({ required: true })
-  seatingCapacity: number;
+  seatingCapacity?: number;
 
   @Prop({ required: true, type: [String] })
   seats: string[];
