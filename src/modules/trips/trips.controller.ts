@@ -47,6 +47,7 @@ export class TripsController {
       index: index || 1,
       order,
       sort,
+      total: data.length,
     };
   }
 
@@ -67,7 +68,8 @@ export class TripsController {
 
   @Post()
   @ApiOperation({ summary: 'Create a new trip' })
-  @ApiResponse({ status: 201, description: 'Not Found' })
+  @ApiResponse({ status: 201, description: 'Success' })
+  @ApiResponse({ status: 404, description: 'Not Found' })
   @ApiResponse({ status: 400, description: 'Confict' })
   async createTrip(@Body() trip: CreateTripDto) {
     return await this.tripsService.create(trip);

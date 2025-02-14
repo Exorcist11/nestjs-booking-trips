@@ -30,7 +30,7 @@ export class UsersController {
   @ApiQuery({ name: 'index', required: false, type: Number })
   @ApiQuery({ name: 'order', required: false })
   @ApiQuery({ name: 'sort', required: false })
-  async getAllCars(
+  async getAllUsers(
     @Query('fullName') search?: string,
     @Query('limit') limit?: number,
     @Query('index') index?: number,
@@ -52,6 +52,7 @@ export class UsersController {
       index: index || 1,
       order,
       sort,
+      total: data.length
     };
   }
 

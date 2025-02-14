@@ -20,6 +20,9 @@ export class Trip {
 
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Car', required: true })
   car: mongoose.Schema.Types.ObjectId;
+
+  @Prop({ required: true, type: [String] })
+  bookedSeats: string[];
 }
 
 export type TripDocument = HydratedDocument<Trip>;

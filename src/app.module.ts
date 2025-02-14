@@ -8,6 +8,7 @@ import { UsersModule } from './modules/users/users.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { CloudinaryModule } from './modules/cloudinary/cloudinary.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { BookingsModule } from './modules/bookings/bookings.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
     CarsModule,
     UsersModule,
     CloudinaryModule,
+    BookingsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

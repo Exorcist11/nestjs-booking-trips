@@ -52,6 +52,7 @@ export class CarsController {
       index: index || 1,
       order,
       sort,
+      total:data.length
     };
   }
 
