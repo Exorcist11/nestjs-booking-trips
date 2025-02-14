@@ -15,4 +15,10 @@ export class CreateCarDto {
 
   @ApiProperty({ example: 40, description: 'Seating Capacity' })
   seatingCapacity: number;
+
+  @ApiProperty({
+    example: ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'],
+    description: 'Seat list',
+  })
+  seats: [string];
 }

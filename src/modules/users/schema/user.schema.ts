@@ -4,7 +4,7 @@ import { HydratedDocument } from 'mongoose';
 @Schema()
 export class User {
   @Prop({ required: true })
-  fullName: string;
+  fullName?: string;
 
   @Prop({ required: false })
   email: string;

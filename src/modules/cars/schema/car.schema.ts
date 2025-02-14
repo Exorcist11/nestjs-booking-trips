@@ -17,6 +17,9 @@ export class Car {
 
   @Prop({ required: true })
   seatingCapacity: number;
+
+  @Prop({ required: true, type: [String] })
+  seats: string[];
 }
 
 export type CarDocument = HydratedDocument<Car>;
