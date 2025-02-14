@@ -16,7 +16,7 @@ export class Trip {
   price: number;
 
   @Prop({ required: true, default: 40 })
-  availableSeats: number;
+  availableSeats?: number;
 
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Car', required: true })
   car: mongoose.Schema.Types.ObjectId;

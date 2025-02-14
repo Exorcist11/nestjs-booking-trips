@@ -25,17 +25,17 @@ export class TripsController {
   @ApiQuery({ name: 'index', required: false, type: Number })
   @ApiQuery({ name: 'order', required: false })
   @ApiQuery({ name: 'sort', required: false })
-  getAllTrips(
+  async getAllTrips(
     @Query('destination') search?: string,
     @Query('limit') limit?: number,
     @Query('index') index?: number,
-    @Query('order') order?: string,
+    @Query('order') order?: 'asc' | 'desc',
     @Query('sort') sort?: string,
   ) {
-    const data = this.tripsService.findAll(
+    const data = await this.tripsService.findAll(
       search,
       limit,
-      index - 1,
+      index,
       order,
       sort,
     );
@@ -61,8 +61,8 @@ export class TripsController {
     status: 404,
     description: 'Success',
   })
-  getTripById(@Query('id') id: string) {
-    return this.tripsService.findById(id);
+  async getTripById(@Query('id') id: string) {
+    return await this.tripsService.findById(id);
   }
 
   @Post()
@@ -70,7 +70,7 @@ export class TripsController {
   @ApiResponse({ status: 201, description: 'Not Found' })
   @ApiResponse({ status: 400, description: 'Confict' })
   async createTrip(@Body() trip: CreateTripDto) {
-    return this.tripsService.create(trip);
+    return await this.tripsService.create(trip);
   }
 
   @Delete('/:id')
@@ -80,8 +80,8 @@ export class TripsController {
     status: 404,
     description: 'Success',
   })
-  deleteTrip(@Param('id') id: string) {
-    return this.tripsService.delelte(id);
+  async deleteTrip(@Param('id') id: string) {
+    return await this.tripsService.delelte(id);
   }
 
   @Patch(':id')
@@ -92,6 +92,6 @@ export class TripsController {
     @Param('id') id: string,
     @Body() updateTripDto: CreateTripDto,
   ) {
-    return this.tripsService.updateTrip(id, updateTripDto);
+    return await this.tripsService.updateTrip(id, updateTripDto);
   }
 }

@@ -17,8 +17,8 @@ export class CreateTripDto {
   @ApiProperty({ example: 500000, description: 'Giá vé' })
   price: number;
 
-  @ApiProperty({ example: 40, description: 'Số ghế trống', default: 40 })
-  availableSeats: number;
+  availableSeats?: number
+
 
   @ApiProperty({
     example: '65fa1c9e1234567890abcdef',
