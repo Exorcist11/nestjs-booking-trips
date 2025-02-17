@@ -17,21 +17,26 @@ export class UsersService {
     search?: string,
     limit = 10,
     index = 0,
-    order = 'asc',
+    order: 'asc' | 'desc' = 'asc',
     sort = 'fullName',
-  ): Promise<User[]> {
+  ): Promise<{ data: User[]; total: number }> {
     const filter = search
       ? { fullName: { $regex: search, $options: 'i' } }
       : {};
 
     const sortOrder = order === 'asc' ? 1 : -1;
 
-    return this.userModel
-      .find(filter)
-      .sort({ [sort]: sortOrder })
-      .skip(index)
-      .limit(limit)
-      .exec();
+    const [data, total] = await Promise.all([
+      this.userModel
+        .find(filter)
+        .sort({ [sort]: sortOrder })
+        .skip(index)
+        .limit(limit)
+        .exec(),
+      this.userModel.countDocuments(filter),
+    ]);
+
+    return { data, total };
   }
 
   async create(user: User): Promise<User> {

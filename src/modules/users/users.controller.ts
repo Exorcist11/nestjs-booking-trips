@@ -34,13 +34,13 @@ export class UsersController {
     @Query('fullName') search?: string,
     @Query('limit') limit?: number,
     @Query('index') index?: number,
-    @Query('order') order?: string,
+    @Query('order') order?: 'asc' | 'desc',
     @Query('sort') sort?: string,
   ) {
-    const data = await this.usersService.findAll(
+    const { data, total } = await this.usersService.findAll(
       search,
       limit,
-      index - 1,
+      (index - 1) * limit, 
       order,
       sort,
     );
@@ -48,11 +48,11 @@ export class UsersController {
     return {
       data,
       search,
-      limit: limit || 10,
-      index: index || 1,
+      limit,
+      index,
       order,
       sort,
-      total: data.length
+      total, 
     };
   }
 
@@ -105,17 +105,17 @@ export class UsersController {
   }
 
   @Get('/getUserById')
-    @ApiOperation({ summary: 'Get user by id' })
-    @ApiResponse({
-      status: 200,
-      description: 'Return the user.',
-      type: CreateUserDto,
-    })
-    @ApiResponse({
-      status: 404,
-      description: 'User not found.',
-    })
-    async getUserById(@Query('id') id: string) {
-      return this.usersService.findById(id);
-    }
+  @ApiOperation({ summary: 'Get user by id' })
+  @ApiResponse({
+    status: 200,
+    description: 'Return the user.',
+    type: CreateUserDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'User not found.',
+  })
+  async getUserById(@Query('id') id: string) {
+    return this.usersService.findById(id);
+  }
 }
