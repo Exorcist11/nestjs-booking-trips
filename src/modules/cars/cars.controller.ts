@@ -37,7 +37,7 @@ export class CarsController {
     @Query('order') order?: string,
     @Query('sort') sort?: string,
   ) {
-    const data = await this.carsService.findAll(
+    const { data, total } = await this.carsService.findAll(
       search,
       limit,
       index - 1,
@@ -52,7 +52,7 @@ export class CarsController {
       index: index || 1,
       order,
       sort,
-      total:data.length
+      total,
     };
   }
 

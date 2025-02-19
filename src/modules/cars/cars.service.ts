@@ -17,19 +17,24 @@ export class CarsService {
     index = 0,
     order = 'asc',
     sort = 'licensePlate',
-  ): Promise<Car[]> {
+  ): Promise<{ data: Car[]; total: number }> {
     const filter = search
       ? { licensePlate: { $regex: search, $options: 'i' } }
       : {};
 
     const sortOrder = order === 'asc' ? 1 : -1;
 
-    return this.carModel
-      .find(filter)
-      .sort({ [sort]: sortOrder })
-      .skip(index)
-      .limit(limit)
-      .exec();
+    const [data, total] = await Promise.all([
+      this.carModel
+        .find(filter)
+        .sort({ [sort]: sortOrder })
+        .skip(index)
+        .limit(limit)
+        .exec(),
+      this.carModel.countDocuments(filter),
+    ]);
+
+    return { data, total };
   }
 
   async create(car: Car): Promise<Car> {
