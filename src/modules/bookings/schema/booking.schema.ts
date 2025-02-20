@@ -1,7 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose, { HydratedDocument } from 'mongoose';
 
-@Schema()
+@Schema({ timestamps: true })
 export class Booking {
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Trip', required: true })
   trip: mongoose.Schema.Types.ObjectId;
@@ -19,7 +19,7 @@ export class Booking {
   seats: string[];
 
   @Prop({ required: true })
-  totalPrice: number
+  totalPrice: number;
 
   @Prop({ default: false })
   isGuest: boolean;

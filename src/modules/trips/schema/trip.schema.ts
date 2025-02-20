@@ -1,7 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose, { HydratedDocument } from 'mongoose';
 
-@Schema()
+@Schema({ timestamps: true })
 export class Trip {
   @Prop({ required: true })
   departure: string;
