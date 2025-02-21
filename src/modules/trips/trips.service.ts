@@ -4,6 +4,10 @@ import { Model, Types } from 'mongoose';
 import { Trip, TripDocument } from './schema/trip.schema';
 import { CreateTripDto } from './dto/create-trip.dto';
 import { Car, CarDocument } from '../cars/schema/car.schema';
+import {
+  TripSchedule,
+  TripScheduleDocument,
+} from '../trip-schedule/schema/tripSchedule.schema';
 
 interface TripFilter {
   departure?: { $regex: string; $options: string };
@@ -16,6 +20,8 @@ export class TripsService {
   constructor(
     @InjectModel(Trip.name) private tripModel: Model<TripDocument>,
     @InjectModel(Car.name) private carModel: Model<CarDocument>,
+    @InjectModel(TripSchedule.name)
+    private tripSCModule: Model<TripScheduleDocument>,
   ) {}
 
   async findAll(
@@ -26,7 +32,7 @@ export class TripsService {
     index: number = 0,
     order: 'asc' | 'desc' = 'asc',
     sort = '_id',
-  ): Promise<Trip[]> {
+  ): Promise<{ data: Trip[]; total: number }> {
     const filter: TripFilter = {};
     if (departure) {
       filter.departure = { $regex: departure, $options: 'i' };
@@ -42,15 +48,18 @@ export class TripsService {
 
     const sortOrder = order === 'asc' ? 1 : -1;
 
-    const trips = await this.tripModel
-      .find(filter)
-      .sort({ [sort]: sortOrder })
-      .skip(index)
-      .limit(limit)
-      .populate('car')
-      .exec();
+    const [data, total] = await Promise.all([
+      this.tripModel
+        .find(filter)
+        .sort({ [sort]: sortOrder })
+        .skip(index)
+        .limit(limit)
+        .populate('car')
+        .exec(),
+      this.tripModel.countDocuments(filter).exec(),
+    ]);
 
-    return trips;
+    return { data, total };
   }
 
   async create(trip: CreateTripDto): Promise<Trip> {

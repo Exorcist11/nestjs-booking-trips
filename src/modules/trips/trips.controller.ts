@@ -36,7 +36,7 @@ export class TripsController {
     @Query('order') order?: 'asc' | 'desc',
     @Query('sort') sort?: string,
   ) {
-    const data = await this.tripsService.findAll(
+    const { data, total } = await this.tripsService.findAll(
       departure,
       destination,
       departureTime,
@@ -54,7 +54,7 @@ export class TripsController {
       index: index || 1,
       order,
       sort,
-      total: data.length,
+      total,
     };
   }
 
