@@ -38,8 +38,8 @@ export class TripScheduleController {
       departure,
       destination,
       departureTime,
-      limit - 1,
-      index,
+      limit,
+      index - 1,
       order,
       sort,
     );
