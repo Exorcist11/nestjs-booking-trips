@@ -40,7 +40,7 @@ export class UsersController {
     const { data, total } = await this.usersService.findAll(
       search,
       limit,
-      (index - 1) * limit, 
+      (index - 1) * limit,
       order,
       sort,
     );
@@ -48,11 +48,11 @@ export class UsersController {
     return {
       data,
       search,
-      limit,
-      index,
+      limit: Number(limit) || 10,
+      index: Number(index) || 1,
       order,
       sort,
-      total, 
+      total,
     };
   }
 

@@ -48,8 +48,8 @@ export class CarsController {
     return {
       data,
       search,
-      limit: limit || 10,
-      index: index || 1,
+      limit: Number(limit) || 10,
+      index: Number(index) || 1,
       order,
       sort,
       total,
