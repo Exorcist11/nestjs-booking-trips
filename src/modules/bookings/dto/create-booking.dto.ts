@@ -35,6 +35,4 @@ export class CreateBookingDto {
     required: false,
   })
   phoneNumber?: string;
-
-  
 }

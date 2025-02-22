@@ -10,10 +10,10 @@ import { UsersModule } from '../users/users.module';
   imports: [
     MongooseModule.forFeature([{ name: Booking.name, schema: BookingSchema }]),
     TripsModule,
-    UsersModule
+    UsersModule,
   ],
   providers: [BookingsService],
   controllers: [BookingsController],
-  exports: [MongooseModule]
+  exports: [MongooseModule],
 })
 export class BookingsModule {}

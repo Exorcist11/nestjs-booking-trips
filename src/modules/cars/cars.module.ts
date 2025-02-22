@@ -8,6 +8,6 @@ import { Car, CarSchema } from './schema/car.schema';
   imports: [MongooseModule.forFeature([{ name: Car.name, schema: CarSchema }])],
   providers: [CarsService],
   controllers: [CarsController],
-  exports: [MongooseModule]
+  exports: [MongooseModule],
 })
 export class CarsModule {}

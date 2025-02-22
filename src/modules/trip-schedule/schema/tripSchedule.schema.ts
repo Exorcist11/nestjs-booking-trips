@@ -1,5 +1,5 @@
 import { Schema, Prop, SchemaFactory } from '@nestjs/mongoose';
-import { Document, HydratedDocument, Types } from 'mongoose';
+import { Document, HydratedDocument } from 'mongoose';
 
 @Schema({ timestamps: true })
 export class TripSchedule extends Document {
