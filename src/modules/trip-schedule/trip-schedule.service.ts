@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import {
   TripSchedule,
@@ -62,5 +62,32 @@ export class TripScheduleService {
     ]);
 
     return { data, total };
+  }
+
+  async findById(id: string): Promise<TripSchedule> {
+    const exits = await this.tripSCModule.findById(id).exec();
+    if (!exits) {
+      throw new NotFoundException('Trip Schedule not found');
+    }
+    return exits;
+  }
+
+  async update(
+    id: string,
+    updateDto: CreateTripScheduleDto,
+  ): Promise<TripSchedule> {
+    await this.findById(id);
+    const updateSchedule = await this.tripSCModule
+      .findByIdAndUpdate(id, { $set: updateDto }, { new: true })
+      .exec();
+    return updateSchedule;
+  }
+
+  async delete(id: string): Promise<TripSchedule> {
+    const exits = await this.tripSCModule.findByIdAndDelete(id).exec();
+    if (!exits) {
+      throw new NotFoundException('Trip Schedule not found');
+    }
+    return exits;
   }
 }

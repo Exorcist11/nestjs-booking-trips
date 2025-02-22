@@ -1,7 +1,17 @@
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { TripScheduleService } from './trip-schedule.service';
 import { CreateTripScheduleDto } from './dto/tripSchedule.dto';
+import { TripSchedule } from './schema/tripSchedule.schema';
 
 @ApiTags('TripSchedule')
 @Controller('tripSchedule')
@@ -54,5 +64,53 @@ export class TripScheduleController {
       sort,
       total,
     };
+  }
+
+  @Get('/getScheduleById')
+  @ApiOperation({ summary: 'Get schedule by id' })
+  @ApiResponse({
+    status: 200,
+    description: 'Return the schedule.',
+    type: CreateTripScheduleDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Schedule not found.',
+  })
+  async getScheduleById(@Query('id') id: string) {
+    return await this.TripScheduleService.findById(id);
+  }
+
+  @Delete('/:id')
+  @ApiOperation({ summary: 'Delete a schedule' })
+  @ApiResponse({
+    status: 200,
+    description: 'The schedule has been successfully deleted.',
+    type: TripSchedule,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Schedule not found.',
+  })
+  async deleteSchedule(@Param('id') id: string) {
+    return this.TripScheduleService.delete(id);
+  }
+
+  @Patch('/:id')
+  @ApiOperation({ summary: 'Update partial schedule details' })
+  @ApiResponse({
+    status: 200,
+    description: 'The schedule details have been successfully updated.',
+    type: TripSchedule,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Schedule not found.',
+  })
+  async updatePartial(
+    @Param('id') id: string,
+    @Body() updateSchedule: CreateTripScheduleDto,
+  ) {
+    return this.TripScheduleService.update(id, updateSchedule);
   }
 }
