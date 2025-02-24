@@ -10,7 +10,7 @@ import { CreateTripScheduleDto } from './dto/tripSchedule.dto';
 interface TripFilter {
   departure?: { $regex: string; $options: string };
   destination?: { $regex: string; $options: string };
-  departureTime?: { $eq: Date };
+  departureTime?: { $regex: string; $options: string };
 }
 
 @Injectable()
@@ -30,7 +30,7 @@ export class TripScheduleService {
   async findAll(
     departure?: string,
     destination?: string,
-    departureTime?: Date,
+    departureTime?: string,
     limit: number = 10,
     index: number = 0,
     order: 'asc' | 'desc' = 'asc',
@@ -46,7 +46,7 @@ export class TripScheduleService {
     }
 
     if (departureTime) {
-      filter.departureTime = { $eq: new Date(departureTime) };
+      filter.departureTime = { $regex: destination, $options: 'i' };
     }
 
     const sortOrder = order === 'asc' ? 1 : -1;
