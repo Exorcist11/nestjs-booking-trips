@@ -9,7 +9,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { CloudinaryModule } from './modules/cloudinary/cloudinary.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { BookingsModule } from './modules/bookings/bookings.module';
-import { TripScheduleModule } from './modules/trip-schedule/trip-schedule.module';
+import { RouteModule } from './modules/route/route.module';
 
 @Module({
   imports: [
@@ -25,7 +25,7 @@ import { TripScheduleModule } from './modules/trip-schedule/trip-schedule.module
     }),
     AuthModule,
     TripsModule,
-    TripScheduleModule,
+    RouteModule,
     CarsModule,
     UsersModule,
     CloudinaryModule,

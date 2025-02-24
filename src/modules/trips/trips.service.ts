@@ -4,10 +4,6 @@ import { Model, Types } from 'mongoose';
 import { Trip, TripDocument } from './schema/trip.schema';
 import { CreateTripDto } from './dto/create-trip.dto';
 import { Car, CarDocument } from '../cars/schema/car.schema';
-import {
-  TripSchedule,
-  TripScheduleDocument,
-} from '../trip-schedule/schema/tripSchedule.schema';
 
 interface TripFilter {
   departure?: { $regex: string; $options: string };
@@ -20,8 +16,6 @@ export class TripsService {
   constructor(
     @InjectModel(Trip.name) private tripModel: Model<TripDocument>,
     @InjectModel(Car.name) private carModel: Model<CarDocument>,
-    @InjectModel(TripSchedule.name)
-    private tripSCModule: Model<TripScheduleDocument>,
   ) {}
 
   async findAll(
