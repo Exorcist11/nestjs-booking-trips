@@ -5,19 +5,13 @@ import mongoose, { HydratedDocument } from 'mongoose';
 export class Trip {
   @Prop({
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'TripTemplate',
+    ref: 'Schedule',
     required: true,
   })
   template: mongoose.Schema.Types.ObjectId; // Liên kết với TripTemplate
 
   @Prop({ required: true })
   date: Date; // Ngày chạy thực tế
-
-  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Car', required: true })
-  car: mongoose.Schema.Types.ObjectId;
-
-  @Prop({ required: true })
-  price: number;
 
   @Prop({ required: true, default: 40 })
   availableSeats?: number;

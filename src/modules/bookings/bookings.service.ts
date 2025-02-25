@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -9,6 +10,8 @@ import { Model } from 'mongoose';
 import { Trip, TripDocument } from '../trips/schema/trip.schema';
 import { User, UserDocument } from '../users/schema/user.schema';
 import { CreateBookingDto } from './dto/create-booking.dto';
+import { Schedule, ScheduleDocument } from '../schedule/schema/schedule.schema';
+import { Car, CarDocument } from '../cars/schema/car.schema';
 
 @Injectable()
 export class BookingsService {
@@ -16,6 +19,8 @@ export class BookingsService {
     @InjectModel(Booking.name) private bookingModel: Model<BookingDocument>,
     @InjectModel(Trip.name) private tripModel: Model<TripDocument>,
     @InjectModel(User.name) private userModel: Model<UserDocument>,
+    @InjectModel(Schedule.name) private scheduleModel: Model<ScheduleDocument>,
+    @InjectModel(Car.name) private carModel: Model<CarDocument>,
   ) {}
 
   async checkAvailableSeats(
@@ -35,41 +40,79 @@ export class BookingsService {
   }
 
   async bookSeats(booking: CreateBookingDto): Promise<Booking> {
-    const trip = await this.tripModel.findById(booking.tripId).exec();
-    if (!trip) throw new NotFoundException('Trip not found');
+    const { tripID, seats, userID, bookingDate, phoneNumber, customerName } =
+      booking;
 
-    const isAvailable = await this.checkAvailableSeats(
-      booking.tripId,
-      booking.seats,
+    let tripExists = await this.tripModel
+      .findOne({ template: tripID, date: bookingDate })
+      .exec();
+
+    const tripSchedule = await this.scheduleModel.findById(tripID).exec();
+    if (!tripSchedule) throw new NotFoundException('Schedule not found');
+
+    const price = tripSchedule.price;
+
+    // Nếu không tìm thấy chuyến đi -> Tạo mới
+    if (!tripExists) {
+      const car = await this.carModel.findById(tripSchedule.car).exec();
+      if (!car) throw new NotFoundException('Car not found');
+
+      tripExists = new this.tripModel({
+        template: tripID,
+        date: bookingDate,
+        bookedSeats: [],
+        availableSeats: car.seatingCapacity,
+      });
+
+      await tripExists.save(); // 🔥 Lưu lại để tránh `null`
+    }
+
+    // 🔥 Kiểm tra lại nếu `tripExists` vẫn null
+    if (!tripExists)
+      throw new InternalServerErrorException(
+        'Failed to create or retrieve trip',
+      );
+
+    // Kiểm tra ghế còn trống
+    const isAvailable = seats.every(
+      (seat) => !tripExists.bookedSeats.includes(seat),
     );
     if (!isAvailable)
       throw new BadRequestException('Some seats are already booked');
 
-    let user = null;
-    if (booking.userId) {
-      user = await this.userModel.findById(booking.userId).exec();
-      if (!user) throw new NotFoundException('User not found');
-      booking.customerName = user.fullName;
-      booking.phoneNumber = user.phoneNumber;
-    }
-    const totalPrice = trip.price * booking.seats.length;
+    // Xác định thông tin khách hàng
+    let isGuest = true;
+    let finalCustomerName = customerName;
+    let finalPhoneNumber = phoneNumber;
 
+    if (userID) {
+      isGuest = false;
+      const user = await this.userModel.findById(userID);
+      if (!user) throw new NotFoundException('User not found');
+
+      finalCustomerName = user.fullName;
+      finalPhoneNumber = user.phoneNumber;
+    }
+
+    // Tạo booking
     const newBooking = new this.bookingModel({
-      ...booking,
-      trip: booking.tripId,
-      user: user ? user._id : null,
-      totalPrice: totalPrice,
-      isGuest: !user,
+      trip: tripExists._id,
+      user: userID || null,
+      customerName: finalCustomerName,
+      phoneNumber: finalPhoneNumber,
+      seats,
+      totalPrice: price * seats.length,
+      isGuest,
+      isPaid: false,
+      bookingDate: bookingDate || new Date(),
     });
 
-    await newBooking.save();
+    tripExists.bookedSeats.push(...seats);
+    tripExists.availableSeats -= seats.length;
 
-    trip.bookedSeats.push(...booking.seats);
-    trip.availableSeats -= booking.seats.length;
+    await tripExists.save();
 
-    await trip.save();
-
-    return newBooking;
+    return await newBooking.save();
   }
 
   async getAllBookings(

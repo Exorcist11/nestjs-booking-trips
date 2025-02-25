@@ -24,6 +24,9 @@ export class Booking {
   @Prop({ default: false })
   isGuest: boolean;
 
+  @Prop({ type: Date, default: Date.now })
+  bookingDate: Date;
+
   @Prop({ default: false })
   isPaid: boolean;
 }
