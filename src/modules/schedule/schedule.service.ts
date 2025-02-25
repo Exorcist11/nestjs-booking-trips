@@ -67,11 +67,7 @@ export class ScheduleService {
   }
 
   async findById(id: string): Promise<Schedule> {
-    const exits = await this.scheduleModel
-      .findById(id)
-      .populate('car')
-      .populate('route')
-      .exec();
+    const exits = await this.scheduleModel.findById(id).exec();
     if (!exits) {
       throw new NotFoundException('Schedule not found');
     }
