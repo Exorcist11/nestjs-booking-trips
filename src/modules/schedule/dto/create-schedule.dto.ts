@@ -22,4 +22,10 @@ export class CreateScheduleDto {
 
   @ApiProperty({ example: 500000, description: 'Giá vé' })
   price: number;
+
+  @ApiProperty({
+    example: true,
+    description: 'Lịch trình này có hoạt động không',
+  })
+  isActive: boolean;
 }

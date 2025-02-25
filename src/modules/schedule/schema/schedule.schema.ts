@@ -14,6 +14,9 @@ export class Schedule extends Document {
 
   @Prop({ required: true })
   price: number;
+
+  @Prop({ default: true })
+  isActive: boolean;
 }
 
 export type ScheduleDocument = HydratedDocument<Schedule>;
