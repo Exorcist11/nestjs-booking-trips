@@ -13,11 +13,11 @@ interface RouteFilter {
 export class RouteService {
   constructor(
     @InjectModel(Route.name)
-    private RouteModule: Model<RouteDocument>,
+    private routeModel: Model<RouteDocument>,
   ) {}
 
   async createRoute(Route: CreateRouteDto): Promise<Route> {
-    const newRoute = new this.RouteModule(Route);
+    const newRoute = new this.routeModel(Route);
     return await newRoute.save();
   }
 
@@ -42,19 +42,19 @@ export class RouteService {
     const sortOrder = order === 'asc' ? 1 : -1;
 
     const [data, total] = await Promise.all([
-      this.RouteModule.find(filter)
+      this.routeModel.find(filter)
         .sort({ [sort]: sortOrder })
         .skip(index)
         .limit(limit)
         .exec(),
-      this.RouteModule.countDocuments(filter).exec(),
+      this.routeModel.countDocuments(filter).exec(),
     ]);
 
     return { data, total };
   }
 
   async findById(id: string): Promise<Route> {
-    const exits = await this.RouteModule.findById(id).exec();
+    const exits = await this.routeModel.findById(id).exec();
     if (!exits) {
       throw new NotFoundException('Route not found');
     }
@@ -63,7 +63,7 @@ export class RouteService {
 
   async update(id: string, updateDto: CreateRouteDto): Promise<Route> {
     await this.findById(id);
-    const updateRoute = await this.RouteModule.findByIdAndUpdate(
+    const updateRoute = await this.routeModel.findByIdAndUpdate(
       id,
       { $set: updateDto },
       { new: true },
@@ -72,7 +72,7 @@ export class RouteService {
   }
 
   async delete(id: string): Promise<Route> {
-    const exits = await this.RouteModule.findByIdAndDelete(id).exec();
+    const exits = await this.routeModel.findByIdAndDelete(id).exec();
     if (!exits) {
       throw new NotFoundException('Route not found');
     }

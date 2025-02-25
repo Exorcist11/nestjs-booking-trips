@@ -10,6 +10,7 @@ import { CloudinaryModule } from './modules/cloudinary/cloudinary.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { BookingsModule } from './modules/bookings/bookings.module';
 import { RouteModule } from './modules/route/route.module';
+import { ScheduleModule } from './modules/schedule/schedule.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { RouteModule } from './modules/route/route.module';
     UsersModule,
     CloudinaryModule,
     BookingsModule,
+    ScheduleModule
   ],
   controllers: [AppController],
   providers: [AppService],

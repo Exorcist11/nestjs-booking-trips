@@ -15,7 +15,7 @@ export class CreateScheduleDto {
   car: Types.ObjectId;
 
   @ApiProperty({
-    example: '10:00 AM',
+    example: '10:00',
     description: 'Thời gian khởi hành',
   })
   departureTime: string;
