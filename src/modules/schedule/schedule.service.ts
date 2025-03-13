@@ -1,11 +1,23 @@
 import { ScheduleModule } from './schedule.module';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Car, CarDocument } from '../cars/schema/car.schema';
 import { Schedule, ScheduleDocument } from './schema/schedule.schema';
 import { CreateScheduleDto } from './dto/create-schedule.dto';
 import { Route, RouteDocument } from '../route/schema/route.schema';
+
+export interface ScheduleItemRes {
+  schedue_id: string;
+  departure: string;
+  destination: string;
+  time_start: string;
+  price: string;
+}
 
 @Injectable()
 export class ScheduleService {
@@ -96,5 +108,41 @@ export class ScheduleService {
       throw new NotFoundException('Schedule not found');
     }
     return exits;
+  }
+
+  async findPublicSchedule(
+    departure: string,
+    destination: string,
+    date?: Date,
+  ): Promise<ScheduleItemRes[]> {
+    try {
+      const route = await this.routeModel
+        .findOne({ departure, destination })
+        .exec();
+
+      if (!route) return [];
+
+      const schedule = await this.scheduleModel
+        .find({
+          route: String(route._id),
+          isActive: true,
+        })
+        .populate('route')
+        .populate('car')
+        .exec();
+
+      return schedule.map((item: any) => {
+        return {
+          schedue_id: item._id,
+          departure: item.route.departure,
+          destination: item.route.destination,
+          price: item.price,
+          time_start: item.departureTime,
+        };
+      });
+    } catch (error) {
+      console.error('Error when get schedule', error);
+      throw new InternalServerErrorException('Error when get schedule');
+    }
   }
 }

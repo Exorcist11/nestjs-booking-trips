@@ -108,4 +108,21 @@ export class ScheduleController {
   ) {
     return this.scheduleService.update(id, updateSchedule);
   }
+
+  @Get('/public/getAvaibleSchedule')
+  @ApiOperation({ summary: 'Get list schedule to client' })
+  @ApiResponse({
+    status: 200,
+    description: 'Success',
+  })
+  @ApiQuery({ name: 'departure', required: false })
+  @ApiQuery({ name: 'destination', required: false })
+  @ApiQuery({ name: 'date', required: false })
+  async getScheduleFromCustomer(
+    @Query('departure') departure: string,
+    @Query('destination') destination: string,
+    @Query('date') date: Date,
+  ) {
+    return this.scheduleService.findPublicSchedule(departure, destination);
+  }
 }
