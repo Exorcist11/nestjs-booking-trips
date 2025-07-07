@@ -16,9 +16,9 @@ export class SearchRouteDto {
   limit?: number;
 
   @ApiProperty({
-    example: 'departure',
+    example: 'startLocation',
     description:
-      'Trường để sắp xếp (departure, destination, distance, estimatedDuration, direction, isActive)',
+      'Trường để sắp xếp (startLocation, endLocation, duration, price, isDeleted)',
     required: false,
   })
   sortBy?: string;
@@ -35,12 +35,12 @@ export class SearchRouteDto {
     description: 'Điểm xuất phát',
     required: false,
   })
-  departure?: string;
+  startLocation?: string;
 
   @ApiProperty({
     example: 'Thanh Hóa',
     description: 'Điểm đến',
     required: false,
   })
-  destination?: string;
+  endLocation?: string;
 }

@@ -4,42 +4,22 @@ import { Document, HydratedDocument } from 'mongoose';
 @Schema({ timestamps: true })
 export class Route extends Document {
   @Prop({ required: true })
-  departure: string;
+  startLocation: string;
 
   @Prop({ required: true })
-  destination: string;
-
-  @Prop({
-    required: true,
-    type: [String],
-    validate: { validator: (v) => v.length > 0 },
-  })
-  pickupPoints: string[];
-
-  @Prop({
-    required: true,
-    type: [String],
-    validate: { validator: (v) => v.length > 0 },
-  })
-  dropOffPoints: string[];
+  endLocation: string;
 
   @Prop({ required: true })
-  distance: number;
+  duration: number;
 
   @Prop({ required: true })
-  estimatedDuration: number;
+  price: number;
 
-  @Prop({ default: 'forward', enum: ['forward', 'backward'] })
-  direction: string;
-
-  @Prop({ default: 'Asia/Ho_Chi_Minh' })
-  timeZone: string;
+  @Prop({ default: false })
+  isDeleted: boolean;
 
   @Prop()
-  description: string;
-
-  @Prop({ default: true })
-  isActive: boolean;
+  deletedAt?: Date;
 }
 
 export type RouteDocument = HydratedDocument<Route>;

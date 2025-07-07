@@ -30,27 +30,26 @@ export class RouteService {
       limit = 10,
       sortBy,
       sortOrder = 'asc',
-      destination,
-      departure,
+      startLocation,
+      endLocation,
     } = searchRouteDto;
 
     const skip = (page - 1) * limit;
 
     const query: any = {};
-    if (departure || destination) {
-      query.departure = new RegExp(departure, 'i');
-      query.destination = new RegExp(destination, 'i');
+    if (startLocation || endLocation) {
+      query.startLocation = new RegExp(startLocation, 'i');
+      query.endLocation = new RegExp(endLocation, 'i');
     }
 
     const sort: any = {};
     if (sortBy) {
       const validSortFields = [
-        'departure',
-        'destination',
-        'distance',
-        'estimatedDuration',
-        'direction',
-        'isActive',
+        'startLocation',
+        'endLocation',
+        'duration',
+        'price',
+        'isDeleted',
       ];
 
       if (!validSortFields.includes(sortBy)) {
@@ -106,10 +105,11 @@ export class RouteService {
       .findOneAndUpdate(
         {
           _id: id,
-          isActive: true,
+          isDeleted: false,
         },
         {
-          isActive: false,
+          isDeleted: true,
+          deletedAt: new Date(),
         },
         {
           new: true,
@@ -129,10 +129,11 @@ export class RouteService {
       .findOneAndUpdate(
         {
           _id: id,
-          isActive: false,
+          isDeleted: true,
         },
         {
-          isActive: true,
+          isDeleted: true,
+          $unset: { deletedAt: 1 },
         },
         {
           new: true,
