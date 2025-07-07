@@ -19,7 +19,6 @@ import {
 } from '@nestjs/swagger';
 import { CarsService } from './cars.service';
 import { CreateCarDto } from './dto/create-car.dto';
-import { Car } from './schema/car.schema';
 import { CarResponseDto } from './dto/response-car.dto';
 import { SearchCarsDto } from './dto/search-car.dto';
 import { UpdateCarDto } from './dto/update-car.dto';

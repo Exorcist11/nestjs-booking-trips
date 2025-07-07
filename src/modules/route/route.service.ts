@@ -1,13 +1,16 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Route, RouteDocument } from './schema/route.schema';
 import { Model } from 'mongoose';
 import { CreateRouteDto } from './dto/create-route.dto';
-
-interface RouteFilter {
-  departure?: { $regex: string; $options: string };
-  destination?: { $regex: string; $options: string };
-}
+import { RouteResponseDto } from './dto/response-route.dto';
+import { plainToClass } from 'class-transformer';
+import { SearchRouteDto } from './dto/search-route.dto';
+import { UpdateRouteDto } from './dto/update-route.dto';
 
 @Injectable()
 export class RouteService {
@@ -16,65 +19,133 @@ export class RouteService {
     private routeModel: Model<RouteDocument>,
   ) {}
 
-  async createRoute(Route: CreateRouteDto): Promise<Route> {
-    const newRoute = new this.routeModel(Route);
-    return await newRoute.save();
+  async create(createRouteDto: CreateRouteDto): Promise<RouteResponseDto> {
+    const newRoute = await this.routeModel.create(createRouteDto);
+    return plainToClass(RouteResponseDto, newRoute.toObject());
   }
 
-  async findAll(
-    departure?: string,
-    destination?: string,
+  async findAll(searchRouteDto: SearchRouteDto): Promise<RouteResponseDto[]> {
+    const {
+      page = 1,
+      limit = 10,
+      sortBy,
+      sortOrder = 'asc',
+      destination,
+      departure,
+    } = searchRouteDto;
 
-    limit: number = 10,
-    index: number = 0,
-    order: 'asc' | 'desc' = 'asc',
-    sort = '_id',
-  ): Promise<{ data: Route[]; total: number }> {
-    const filter: RouteFilter = {};
-    if (departure) {
-      filter.departure = { $regex: departure, $options: 'i' };
+    const skip = (page - 1) * limit;
+
+    const query: any = {};
+    if (departure || destination) {
+      query.departure = new RegExp(departure, 'i');
+      query.destination = new RegExp(destination, 'i');
     }
 
-    if (destination) {
-      filter.destination = { $regex: destination, $options: 'i' };
+    const sort: any = {};
+    if (sortBy) {
+      const validSortFields = [
+        'departure',
+        'destination',
+        'distance',
+        'estimatedDuration',
+        'direction',
+        'isActive',
+      ];
+
+      if (!validSortFields.includes(sortBy)) {
+        throw new BadRequestException(
+          `Trường sắp xếp phải là một trong: ${validSortFields.join(', ')}`,
+        );
+      }
+
+      sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
+    } else {
+      sort.createdAt = -1;
     }
 
-    const sortOrder = order === 'asc' ? 1 : -1;
-
-    const [data, total] = await Promise.all([
-      this.routeModel
-        .find(filter)
-        .sort({ [sort]: sortOrder })
-        .skip(index)
-        .limit(limit)
-        .exec(),
-      this.routeModel.countDocuments(filter).exec(),
-    ]);
-
-    return { data, total };
-  }
-
-  async findById(id: string): Promise<Route> {
-    const exits = await this.routeModel.findById(id).exec();
-    if (!exits) {
-      throw new NotFoundException('Route not found');
-    }
-    return exits;
-  }
-
-  async update(id: string, updateDto: CreateRouteDto): Promise<Route> {
-    await this.findById(id);
-    const updateRoute = await this.routeModel
-      .findByIdAndUpdate(id, { $set: updateDto }, { new: true })
+    const routes = await this.routeModel
+      .find(query)
+      .sort(sort)
+      .skip(skip)
+      .limit(limit)
       .exec();
-    return updateRoute;
+    return routes.map((route) =>
+      plainToClass(RouteResponseDto, route.toObject()),
+    );
   }
 
-  async delete(id: string): Promise<Route> {
-    const exits = await this.routeModel.findByIdAndDelete(id).exec();
-    if (!exits) {
-      throw new NotFoundException('Route not found');
+  async findOne(id: string): Promise<RouteResponseDto> {
+    const route = await this.routeModel.findById(id).exec();
+
+    if (!route) {
+      throw new NotFoundException(`Không tìm thấy tuyến đường với ID ${id}`);
     }
-    return exits;
+    return plainToClass(RouteResponseDto, route.toObject());
+  }
+
+  async update(
+    id: string,
+    updateRouteDto: UpdateRouteDto,
+  ): Promise<RouteResponseDto> {
+    const updatedRoute = await this.routeModel.findByIdAndUpdate(
+      id,
+      updateRouteDto,
+      { new: true, runValidators: true },
+    );
+
+    if (!updatedRoute) {
+      throw new NotFoundException(`Không tìm thấy tuyến đường với ID ${id}`);
+    }
+
+    return plainToClass(RouteResponseDto, updatedRoute.toObject());
+  }
+
+  async remove(id: string): Promise<void> {
+    const result = await this.routeModel
+      .findOneAndUpdate(
+        {
+          _id: id,
+          isActive: true,
+        },
+        {
+          isActive: false,
+        },
+        {
+          new: true,
+        },
+      )
+      .exec();
+
+    if (!result) {
+      throw new NotFoundException(
+        `Không tìm thấy tuyến đường  với ID ${id} hoặc xe đã bị xóa`,
+      );
+    }
+  }
+
+  async restore(id: string): Promise<RouteResponseDto> {
+    const restoredRoute = await this.routeModel
+      .findOneAndUpdate(
+        {
+          _id: id,
+          isActive: false,
+        },
+        {
+          isActive: true,
+        },
+        {
+          new: true,
+        },
+      )
+      .exec();
+
+    if (!restoredRoute) {
+      throw new NotFoundException(
+        `Không tìm thấy tuyến đường  với ID ${id} hoặc tuyến đường chưa bị xóa`,
+      );
+    }
+
+    return plainToClass(RouteResponseDto, restoredRoute.toObject());
   }
 }
