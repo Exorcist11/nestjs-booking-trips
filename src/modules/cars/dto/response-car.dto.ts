@@ -72,6 +72,19 @@ export class CarResponseDto {
   seatLayout?: string;
 
   @ApiProperty({
+    example: false,
+    description: 'Trạng thái xóa của xe',
+  })
+  isDeleted: boolean;
+
+  @ApiProperty({
+    example: '2025-07-07T10:00:00Z',
+    description: 'Thời gian xóa (nếu có)',
+    required: false,
+  })
+  deletedAt?: Date;
+
+  @ApiProperty({
     example: '2025-07-07T10:00:00Z',
     description: 'Thời gian tạo xe',
   })

@@ -4,6 +4,7 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import { ConfigService } from '@nestjs/config';
+import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -27,7 +28,7 @@ async function bootstrap() {
   SwaggerModule.setup('/', app, documentFactory);
 
   app.useStaticAssets(join(__dirname, '..', 'node_modules', 'swagger-ui-dist'));
-
+  app.useGlobalPipes(new ValidationPipe({ transform: true }));
   await app.listen(port);
 
   console.log(`Server is running on http://localhost:${port}`);
