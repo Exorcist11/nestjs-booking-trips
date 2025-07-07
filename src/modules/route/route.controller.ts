@@ -19,7 +19,6 @@ import {
 } from '@nestjs/swagger';
 import { RouteService } from './route.service';
 import { CreateRouteDto } from './dto/create-route.dto';
-import { Route } from './schema/route.schema';
 import { RouteResponseDto } from './dto/response-route.dto';
 import { SearchRouteDto } from './dto/search-route.dto';
 import { UpdateRouteDto } from './dto/update-route.dto';

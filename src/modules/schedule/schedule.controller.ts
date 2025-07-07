@@ -3,126 +3,136 @@ import {
   Controller,
   Delete,
   Get,
+  HttpStatus,
   Param,
   Patch,
   Post,
   Query,
 } from '@nestjs/common';
-import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { ScheduleService } from './schedule.service';
 import { CreateScheduleDto } from './dto/create-schedule.dto';
 import { Schedule } from './schema/schedule.schema';
+import { ScheduleResponseDto } from './dto/response-schedule.dto';
+import { SearchSchedulesDto } from './dto/search-schedule.dto';
+import { UpdateScheduleDto } from './dto/update-schedule.dto';
 
 @ApiTags('Schedule')
 @Controller('schedule')
 export class ScheduleController {
   constructor(private readonly scheduleService: ScheduleService) {}
 
-  @Post('/createSchedule')
-  @ApiOperation({ summary: 'Create a new schedule' })
-  @ApiResponse({ status: 201, description: 'Success' })
-  async createRoute(@Body() schedule: CreateScheduleDto) {
-    return await this.scheduleService.createSchedule(schedule);
+  @Post()
+  @ApiOperation({ summary: 'Tạo lịch trình mới' })
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: 'Lịch trình được tạo thành công',
+    type: ScheduleResponseDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Dữ liệu đầu vào không hợp lệ',
+  })
+  async create(
+    @Body() createScheduleDto: CreateScheduleDto,
+  ): Promise<ScheduleResponseDto> {
+    return this.scheduleService.create(createScheduleDto);
   }
 
-  @Get('/getAllSchedule')
-  @ApiOperation({ summary: 'Get all schedule' })
-  @ApiResponse({ status: 200, description: 'Success' })
-  @ApiQuery({ name: 'car', required: false })
-  @ApiQuery({ name: 'route', required: false })
-  @ApiQuery({ name: 'limit', required: false, type: Number })
-  @ApiQuery({ name: 'index', required: false, type: Number })
-  @ApiQuery({ name: 'order', required: false })
-  @ApiQuery({ name: 'sort', required: false })
-  async getAllSchedule(
-    @Query('car') car?: string,
-    @Query('route') route?: string,
-    @Query('limit') limit?: number,
-    @Query('index') index?: number,
-    @Query('order') order?: 'asc' | 'desc',
-    @Query('sort') sort?: string,
-  ) {
-    const { data, total } = await this.scheduleService.findAll(
-      car,
-      route,
-      limit,
-      index - 1,
-      order,
-      sort,
-    );
-
-    return {
-      data,
-      limit: Number(limit) || 10,
-      index: Number(index) || 1,
-      order,
-      sort,
-      total,
-    };
+  @Get()
+  @ApiOperation({ summary: 'Lấy danh sách lịch trình' })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Số trang (mặc định: 1)',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Số bản ghi mỗi trang (mặc định: 10)',
+  })
+  @ApiQuery({
+    name: 'sortBy',
+    required: false,
+    type: String,
+    description: 'Trường để sắp xếp (departureTime)',
+  })
+  @ApiQuery({
+    name: 'sortOrder',
+    required: false,
+    type: String,
+    description: 'Thứ tự sắp xếp (asc hoặc desc, mặc định: asc)',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Danh sách lịch trình',
+    type: [ScheduleResponseDto],
+  })
+  async findAll(
+    @Query() searchScheduleDto: SearchSchedulesDto,
+  ): Promise<ScheduleResponseDto[]> {
+    return this.scheduleService.findAll(searchScheduleDto);
   }
 
-  @Get('/getScheduleById')
-  @ApiOperation({ summary: 'Get schedule by id' })
-  @ApiResponse({
-    status: 200,
-    description: 'Return the schedule.',
-    type: CreateScheduleDto,
+  @Get(':id')
+  @ApiOperation({ summary: 'Lấy thông tin lịch trình theo ID' })
+  @ApiParam({
+    name: 'id',
+    description: 'ID của lịch trình',
+    example: '65fa1c9e1234567890abcdef',
   })
   @ApiResponse({
-    status: 404,
-    description: 'Schedule not found.',
+    status: HttpStatus.OK,
+    description: 'Thông tin lịch trình',
+    type: ScheduleResponseDto,
   })
-  async getScheduleById(@Query('id') id: string) {
-    return await this.scheduleService.findById(id);
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Không tìm thấy lịch trình',
+  })
+  async findOne(@Param('id') id: string): Promise<ScheduleResponseDto> {
+    return this.scheduleService.findOne(id);
   }
 
-  @Delete('/:id')
-  @ApiOperation({ summary: 'Delete a schedule' })
-  @ApiResponse({
-    status: 200,
-    description: 'The schedule has been successfully deleted.',
-    type: Schedule,
+  @Patch(':id')
+  @ApiOperation({ summary: 'Cập nhật lịch trình' })
+  @ApiParam({
+    name: 'id',
+    description: 'ID của lịch trình',
+    example: '686b769942785df2e9cc4eb6',
   })
   @ApiResponse({
-    status: 404,
-    description: 'Schedule not found.',
+    status: HttpStatus.OK,
+    description: 'Lịch trình được cập nhật thành công',
+    type: ScheduleResponseDto,
   })
-  async deleteSchedule(@Param('id') id: string) {
-    return this.scheduleService.delete(id);
-  }
-
-  @Patch('/:id')
-  @ApiOperation({ summary: 'Update partial schedule details' })
-  @ApiResponse({
-    status: 200,
-    description: 'The schedule details have been successfully updated.',
-    type: Schedule,
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Schedule not found.',
-  })
-  async updatePartial(
+  async update(
     @Param('id') id: string,
-    @Body() updateSchedule: CreateScheduleDto,
-  ) {
-    return this.scheduleService.update(id, updateSchedule);
+    @Body() updateScheduleDto: UpdateScheduleDto,
+  ): Promise<ScheduleResponseDto> {
+    return this.scheduleService.update(id, updateScheduleDto);
   }
 
-  @Get('/public/getAvaibleSchedule')
-  @ApiOperation({ summary: 'Get list schedule to client' })
-  @ApiResponse({
-    status: 200,
-    description: 'Success',
+  @Delete(':id')
+  @ApiOperation({ summary: 'Xóa mềm lịch trình' })
+  @ApiParam({
+    name: 'id',
+    description: 'ID của lịch trình',
+    example: '686b769942785df2e9cc4eb6',
   })
-  @ApiQuery({ name: 'departure', required: false })
-  @ApiQuery({ name: 'destination', required: false })
-  @ApiQuery({ name: 'date', required: false })
-  async getScheduleFromCustomer(
-    @Query('departure') departure: string,
-    @Query('destination') destination: string,
-    @Query('date') date: Date,
-  ) {
-    return this.scheduleService.findPublicSchedule(departure, destination);
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Lịch trình được xóa mềm thành công',
+  })
+  async remove(@Param('id') id: string): Promise<void> {
+    return this.scheduleService.remove(id);
   }
 }

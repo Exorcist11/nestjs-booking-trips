@@ -1,33 +1,28 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, HydratedDocument, Types } from 'mongoose';
 
-@Schema()
+@Schema({ timestamps: true })
 export class Schedule extends Document {
-  @Prop({ required: true, type: Types.ObjectId, ref: 'Route' })
-  route: Types.ObjectId;
+  @Prop({ type: Types.ObjectId, ref: 'Route', required: true })
+  routeId: Types.ObjectId;
 
-  @Prop({ required: true, type: Types.ObjectId, ref: 'Car' })
-  car: Types.ObjectId;
-
-  @Prop({ required: true, type: Date })
-  departureTime: Date;
-
-  @Prop({ required: true, type: Date })
-  arrivalTime: Date;
+  @Prop({ type: Types.ObjectId, ref: 'Car', required: true })
+  carId: Types.ObjectId;
 
   @Prop({ required: true })
-  price: number;
+  departureTime: string; // e.g., "03:00" for 3 AM
 
-  @Prop({
-    required: true,
-    type: [String],
-    validate: { validator: (v) => v.length > 0 },
-  })
+  @Prop({ default: 'daily', enum: ['daily', 'weekly', 'custom'] })
+  frequency: string;
+
   @Prop({ default: true })
   isActive: boolean;
 
+  @Prop({ default: false })
+  isDeleted: boolean;
+
   @Prop()
-  note: string;
+  deletedAt?: Date;
 }
 
 export type ScheduleDocument = HydratedDocument<Schedule>;

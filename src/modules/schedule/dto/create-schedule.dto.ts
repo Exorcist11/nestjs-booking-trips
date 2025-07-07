@@ -1,61 +1,32 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Types } from 'mongoose';
 
 export class CreateScheduleDto {
   @ApiProperty({
-    example: '65fa1c9e1234567890abcdef',
+    example: '686b769942785df2e9cc4eb7',
     description: 'ID của tuyến đường',
   })
-  route: Types.ObjectId;
+  routeId: string;
 
   @ApiProperty({
-    example: '65fa1c9e1234567890abcdef',
-    description: 'ID của xe khách',
+    example: '686b769942785df2e9cc4eb4',
+    description: 'ID của xe',
   })
-  car: Types.ObjectId;
+  carId: string;
 
-  @ApiProperty({
-    example: '2025-01-01T03:00:00+07:00',
-    description: 'Thời gian khởi hành (theo chuẩn ISO 8601)',
-  })
+  @ApiProperty({ example: '03:00', description: 'Giờ khởi hành (HH:mm)' })
   departureTime: string;
 
   @ApiProperty({
-    example: '2025-01-01T07:00:00+07:00',
-    description: 'Thời gian đến (theo chuẩn ISO 8601)',
+    example: 'daily',
+    description: 'Tần suất (daily, weekly, custom)',
+    required: false,
   })
-  arrivalTime: string;
-
-  @ApiProperty({
-    example: 150000,
-    description: 'Giá vé (VNĐ)',
-  })
-  price: number;
-
-  @ApiProperty({
-    example: [
-      'monday',
-      'tuesday',
-      'wednesday',
-      'thursday',
-      'friday',
-      'saturday',
-      'sunday',
-    ],
-    description: 'Các ngày hoạt động trong tuần',
-  })
-  operatingDays: string[];
+  frequency?: string;
 
   @ApiProperty({
     example: true,
-    description: 'Trạng thái hoạt động của lịch trình',
-  })
-  isActive: boolean;
-
-  @ApiProperty({
-    example: 'Chuyến cố định hàng ngày từ Thanh Hóa đến Hà Nội',
-    description: 'Ghi chú về lịch trình',
+    description: 'Trạng thái hoạt động',
     required: false,
   })
-  note?: string;
+  isActive?: boolean;
 }

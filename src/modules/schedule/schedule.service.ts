@@ -1,7 +1,6 @@
-import { ScheduleModule } from './schedule.module';
 import {
+  BadRequestException,
   Injectable,
-  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -10,6 +9,11 @@ import { Car, CarDocument } from '../cars/schema/car.schema';
 import { Schedule, ScheduleDocument } from './schema/schedule.schema';
 import { CreateScheduleDto } from './dto/create-schedule.dto';
 import { Route, RouteDocument } from '../route/schema/route.schema';
+import { Trip, TripDocument } from '../trips/schema/trip.schema';
+import { ScheduleResponseDto } from './dto/response-schedule.dto';
+import { plainToClass } from 'class-transformer';
+import { SearchSchedulesDto } from './dto/search-schedule.dto';
+import { UpdateScheduleDto } from './dto/update-schedule.dto';
 
 export interface ScheduleItemRes {
   schedue_id: string;
@@ -22,127 +26,221 @@ export interface ScheduleItemRes {
 @Injectable()
 export class ScheduleService {
   constructor(
-    @InjectModel(Route.name) private routeModel: Model<RouteDocument>,
-    @InjectModel(Car.name) private carModel: Model<CarDocument>,
     @InjectModel(Schedule.name) private scheduleModel: Model<ScheduleDocument>,
+    @InjectModel(Car.name) private carModel: Model<CarDocument>,
+    @InjectModel(Route.name) private routeModel: Model<RouteDocument>,
+    @InjectModel(Trip.name) private tripModel: Model<TripDocument>,
   ) {}
 
-  async createSchedule(schedule: CreateScheduleDto): Promise<Schedule> {
-    const carExists = await this.carModel.findById(schedule.car).exec();
-    if (!carExists) {
-      throw new NotFoundException('Car not found!');
+  async create(
+    createScheduleDto: CreateScheduleDto,
+  ): Promise<ScheduleResponseDto> {
+    const route = await this.routeModel
+      .findOne({ _id: createScheduleDto.routeId, isDeleted: false })
+      .exec();
+
+    if (!route) {
+      throw new NotFoundException(
+        `Không tìm thấy tuyến đường với ID ${createScheduleDto.routeId}`,
+      );
     }
-    const routeExists = await this.routeModel.findById(schedule.route).exec();
-    if (!routeExists) {
-      throw new NotFoundException('Route not found');
+
+    const car = await this.carModel
+      .findOne({ _id: createScheduleDto.carId, isDeleted: false })
+      .exec();
+    if (!car) {
+      throw new NotFoundException(
+        `Không tìm thấy xe với ID ${createScheduleDto.carId}`,
+      );
     }
-    const newSchedule = new this.scheduleModel(schedule);
-    return await newSchedule.save();
+
+    // Validate departureTime format (HH:mm)
+    const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+    if (!timeRegex.test(createScheduleDto.departureTime)) {
+      throw new BadRequestException('Giờ khởi hành phải có định dạng HH:mm');
+    }
+
+    const createdSchedule = await this.scheduleModel.create(createScheduleDto);
+    const scheduleResponse = plainToClass(
+      ScheduleResponseDto,
+      createdSchedule.toObject(),
+    );
+    scheduleResponse.startLocation = route.startLocation;
+    scheduleResponse.endLocation = route.endLocation;
+    scheduleResponse.duration = route.duration;
+    scheduleResponse.price = route.price;
+    scheduleResponse.carLicensePlate = car.licensePlate;
+    return scheduleResponse;
   }
 
   async findAll(
-    car?: string,
-    route?: string,
+    searchSchedulesDto: SearchSchedulesDto,
+  ): Promise<ScheduleResponseDto[]> {
+    const {
+      startLocation,
+      endLocation,
+      carLicensePlate,
+      includeDeleted = false,
+      page = 1,
+      limit = 10,
+      sortBy,
+      sortOrder = 'asc',
+    } = searchSchedulesDto;
+    const skip = (page - 1) * limit;
 
-    limit: number = 10,
-    index: number = 0,
-    order: 'asc' | 'desc' = 'asc',
-    sort = '_id',
-  ): Promise<{ data: Schedule[]; total: number }> {
-    const filter: {
-      car?: { $regex: string; $options: string };
-      route?: { $regex: string; $options: string };
-    } = {};
-    if (car) {
-      filter.car = { $regex: car, $options: 'i' };
+    const query: any = {};
+    if (!includeDeleted) {
+      query.isDeleted = false;
     }
 
-    if (route) {
-      filter.route = { $regex: route, $options: 'i' };
-    }
-
-    const sortOrder = order === 'asc' ? 1 : -1;
-
-    const [data, total] = await Promise.all([
-      this.scheduleModel
-        .find(filter)
-        .populate('car')
-        .populate('route')
-        .sort({ [sort]: sortOrder })
-        .skip(index)
-        .limit(limit)
-        .exec(),
-      this.scheduleModel.countDocuments(filter).exec(),
-    ]);
-
-    return { data, total };
-  }
-
-  async findById(id: string): Promise<Schedule> {
-    const exits = await this.scheduleModel.findById(id).exec();
-    if (!exits) {
-      throw new NotFoundException('Schedule not found');
-    }
-    return exits;
-  }
-
-  async update(id: string, updateDto: CreateScheduleDto): Promise<Schedule> {
-    await this.findById(id);
-    const carExists = await this.carModel.findById(updateDto.car).exec();
-    if (!carExists && updateDto.car) {
-      throw new NotFoundException('Car not found!');
-    }
-    const routeExists = await this.routeModel.findById(updateDto.route).exec();
-    if (!routeExists && updateDto.route) {
-      throw new NotFoundException('Route not found');
-    }
-    const updateSchedule = await this.scheduleModel
-      .findByIdAndUpdate(id, { $set: updateDto }, { new: true })
+    const schedules = await this.scheduleModel
+      .find(query)
+      .populate({
+        path: 'routeId',
+        match: {
+          isDeleted: false,
+          ...(startLocation && {
+            startLocation: new RegExp(startLocation, 'i'),
+          }),
+          ...(endLocation && { endLocation: new RegExp(endLocation, 'i') }),
+        },
+        select: 'startLocation endLocation duration price',
+      })
+      .populate({
+        path: 'carId',
+        match: {
+          isDeleted: false,
+          ...(carLicensePlate && {
+            licensePlate: new RegExp(carLicensePlate, 'i'),
+          }),
+        },
+        select: 'licensePlate',
+      })
+      .skip(skip)
+      .limit(limit)
+      .sort(
+        sortBy
+          ? { [sortBy]: sortOrder === 'desc' ? -1 : 1 }
+          : { createdAt: -1 },
+      )
       .exec();
-    return updateSchedule;
-  }
 
-  async delete(id: string): Promise<Schedule> {
-    const exits = await this.scheduleModel.findByIdAndDelete(id).exec();
-    if (!exits) {
-      throw new NotFoundException('Schedule not found');
-    }
-    return exits;
-  }
+    return schedules
+      .filter((schedule) => schedule.routeId && schedule.carId)
+      .map((schedule) => {
+        const scheduleResponse = plainToClass(
+          ScheduleResponseDto,
+          schedule.toObject(),
+        );
 
-  async findPublicSchedule(
-    departure: string,
-    destination: string,
-    date?: Date,
-  ): Promise<ScheduleItemRes[]> {
-    try {
-      const route = await this.routeModel
-        .findOne({ departure, destination })
-        .exec();
-
-      if (!route) return [];
-
-      const schedule = await this.scheduleModel
-        .find({
-          route: String(route._id),
-          isActive: true,
-        })
-        .populate('route')
-        .populate('car')
-        .exec();
-
-      return schedule.map((item: any) => {
-        return {
-          schedue_id: item._id,
-          departure: item.route.departure,
-          destination: item.route.destination,
-          price: item.price,
-          time_start: item.departureTime,
-        };
+        return scheduleResponse;
       });
-    } catch (error) {
-      console.error('Error when get schedule', error);
-      throw new InternalServerErrorException('Error when get schedule');
+  }
+
+  async findOne(id: string): Promise<ScheduleResponseDto> {
+    const schedule = await this.scheduleModel
+      .findOne({ _id: id, isDeleted: false })
+      .populate({
+        path: 'routeId',
+        match: { isDeleted: false },
+        select: 'startLocation endLocation duration price',
+      })
+      .populate({
+        path: 'carId',
+        match: { isDeleted: false },
+        select: 'licensePlate',
+      })
+      .exec();
+    if (!schedule || !schedule.routeId || !schedule.carId) {
+      throw new NotFoundException(`Không tìm thấy lịch trình với ID ${id}`);
+    }
+    return plainToClass(ScheduleResponseDto, schedule.toObject());
+  }
+
+  async update(
+    id: string,
+    updateScheduleDto: UpdateScheduleDto,
+  ): Promise<ScheduleResponseDto> {
+    // Validate Route if provided
+    if (updateScheduleDto.routeId) {
+      const route = await this.routeModel
+        .findOne({ _id: updateScheduleDto.routeId, isDeleted: false })
+        .exec();
+      if (!route) {
+        throw new NotFoundException(
+          `Không tìm thấy tuyến đường với ID ${updateScheduleDto.routeId}`,
+        );
+      }
+    }
+
+    // Validate Car if provided
+    if (updateScheduleDto.carId) {
+      const car = await this.carModel
+        .findOne({ _id: updateScheduleDto.carId, isDeleted: false })
+        .exec();
+      if (!car) {
+        throw new NotFoundException(
+          `Không tìm thấy xe với ID ${updateScheduleDto.carId}`,
+        );
+      }
+    }
+
+    // Validate departureTime format if provided
+    if (updateScheduleDto.departureTime) {
+      const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+      if (!timeRegex.test(updateScheduleDto.departureTime)) {
+        throw new BadRequestException('Giờ khởi hành phải có định dạng HH:mm');
+      }
+    }
+
+    const updatedSchedule = await this.scheduleModel
+      .findOneAndUpdate({ _id: id, isDeleted: false }, updateScheduleDto, {
+        new: true,
+        runValidators: true,
+      })
+      .populate({
+        path: 'routeId',
+        match: { isDeleted: false },
+        select: 'startLocation endLocation duration price',
+      })
+      .populate({
+        path: 'carId',
+        match: { isDeleted: false },
+        select: 'licensePlate',
+      })
+      .exec();
+
+    if (
+      !updatedSchedule ||
+      !updatedSchedule.routeId ||
+      !updatedSchedule.carId
+    ) {
+      throw new NotFoundException(`Không tìm thấy lịch trình với ID ${id}`);
+    }
+
+    return plainToClass(ScheduleResponseDto, updatedSchedule.toObject());
+  }
+
+  async remove(id: string): Promise<void> {
+    // Check if schedule is used in active trips
+    const activeTrips = await this.tripModel
+      .findOne({ scheduleId: id, isDeleted: false })
+      .exec();
+    if (activeTrips) {
+      throw new BadRequestException(
+        'Lịch trình đang được sử dụng trong một chuyến đi!',
+      );
+    }
+
+    const result = await this.scheduleModel
+      .findOneAndUpdate(
+        { _id: id, isDeleted: false },
+        { isDeleted: true, deletedAt: new Date() },
+        { new: true },
+      )
+      .exec();
+    if (!result) {
+      throw new NotFoundException(`Không tìm thấy lịch trình với ID ${id}`);
     }
   }
 }

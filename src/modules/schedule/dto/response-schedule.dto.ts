@@ -2,77 +2,62 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class ScheduleResponseDto {
   @ApiProperty({
-    example: '65fa1c9e1234567890abcdef',
+    example: '686b769942785df2e9cc4eb6',
     description: 'ID của lịch trình',
   })
   id: string;
 
   @ApiProperty({
-    example: '65fa1c9e1234567890abcdef',
+    example: '686b769942785df2e9cc4eb7',
     description: 'ID của tuyến đường',
   })
-  route: string;
+  routeId: string;
 
-  @ApiProperty({
-    example: '65fa1c9e1234567890abcdef',
-    description: 'ID của xe khách',
-  })
-  car: string;
+  @ApiProperty({ example: 'Thanh Hóa', description: 'Điểm xuất phát' })
+  startLocation: string;
 
-  @ApiProperty({
-    example: '2025-01-01T03:00:00+07:00',
-    description: 'Thời gian khởi hành (theo chuẩn ISO 8601)',
-  })
-  departureTime: string;
+  @ApiProperty({ example: 'Hà Nội', description: 'Điểm đến' })
+  endLocation: string;
 
-  @ApiProperty({
-    example: '2025-01-01T07:00:00+07:00',
-    description: 'Thời gian đến (theo chuẩn ISO 8601)',
-  })
-  arrivalTime: string;
+  @ApiProperty({ example: 180, description: 'Thời gian di chuyển (phút)' })
+  duration: number;
 
-  @ApiProperty({
-    example: 150000,
-    description: 'Giá vé (VNĐ)',
-  })
+  @ApiProperty({ example: 200000, description: 'Giá vé (VNĐ)' })
   price: number;
 
   @ApiProperty({
-    example: [
-      'monday',
-      'tuesday',
-      'wednesday',
-      'thursday',
-      'friday',
-      'saturday',
-      'sunday',
-    ],
-    description: 'Các ngày hoạt động trong tuần',
+    example: '686b769942785df2e9cc4eb4',
+    description: 'ID của xe',
   })
-  operatingDays: string[];
+  carId: string;
+
+  @ApiProperty({ example: '36B-12345', description: 'Biển số xe' })
+  carLicensePlate: string;
+
+  @ApiProperty({ example: '03:00', description: 'Giờ khởi hành (HH:mm)' })
+  departureTime: string;
 
   @ApiProperty({
-    example: true,
-    description: 'Trạng thái hoạt động của lịch trình',
+    example: 'daily',
+    description: 'Tần suất (daily, weekly, custom)',
   })
+  frequency: string;
+
+  @ApiProperty({ example: true, description: 'Trạng thái hoạt động' })
   isActive: boolean;
 
-  @ApiProperty({
-    example: 'Chuyến cố định hàng ngày từ Thanh Hóa đến Hà Nội',
-    description: 'Ghi chú về lịch trình',
-    required: false,
-  })
-  note?: string;
+  @ApiProperty({ example: false, description: 'Trạng thái xóa mềm' })
+  isDeleted: boolean;
 
   @ApiProperty({
     example: '2025-07-07T10:00:00Z',
-    description: 'Thời gian tạo lịch trình',
+    description: 'Thời gian tạo',
   })
   createdAt: Date;
 
   @ApiProperty({
     example: '2025-07-07T10:00:00Z',
-    description: 'Thời gian cập nhật lịch trình',
+    description: 'Thời gian cập nhật',
   })
   updatedAt: Date;
 }
