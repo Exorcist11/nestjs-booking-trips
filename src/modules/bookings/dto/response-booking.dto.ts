@@ -1,27 +1,31 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-import { Types } from 'mongoose';
+export class BookingResponseDto {
+  @ApiProperty({
+    example: '65fa1c9e1234567890abcdef',
+    description: 'ID của đặt vé',
+  })
+  id: string;
 
-export class CreateBookingDto {
   @ApiProperty({
     example: '65fa1c9e1234567890abcdef',
     description: 'ID của chuyến đi',
   })
-  trip: Types.ObjectId;
+  trip: string;
 
   @ApiProperty({
     example: '65fa1c9e1234567890abcdef',
     description: 'ID của người dùng (nếu đã đăng ký)',
     required: false,
   })
-  user?: Types.ObjectId;
+  user?: string;
 
   @ApiProperty({
     example: '65fa1c9e1234567890abcdef',
     description: 'ID của khuyến mãi (nếu có)',
     required: false,
   })
-  promotion?: Types.ObjectId;
+  promotion?: string;
 
   @ApiProperty({
     example: 'Nguyễn Văn A',
@@ -70,30 +74,32 @@ export class CreateBookingDto {
   @ApiProperty({
     example: false,
     description: 'Khách hàng có phải là khách vãng lai không',
-    required: false,
   })
-  isGuest?: boolean;
+  isGuest: boolean;
+
+  @ApiProperty({
+    example: '2025-07-07T10:00:00Z',
+    description: 'Ngày đặt vé',
+  })
+  bookingDate: Date;
 
   @ApiProperty({
     example: 'pending',
     description: 'Trạng thái đặt vé (pending, confirmed, cancelled, completed)',
-    required: false,
   })
-  status?: string;
+  status: string;
 
   @ApiProperty({
     example: false,
     description: 'Trạng thái thanh toán',
-    required: false,
   })
-  isPaid?: boolean;
+  isPaid: boolean;
 
   @ApiProperty({
     example: 'cash',
     description: 'Phương thức thanh toán (cash, transfer, card, e-wallet)',
-    required: false,
   })
-  paymentMethod?: string;
+  paymentMethod: string;
 
   @ApiProperty({
     example: 'Yêu cầu ghế gần cửa sổ',
@@ -101,4 +107,16 @@ export class CreateBookingDto {
     required: false,
   })
   note?: string;
+
+  @ApiProperty({
+    example: '2025-07-07T10:00:00Z',
+    description: 'Thời gian tạo đặt vé',
+  })
+  createdAt: Date;
+
+  @ApiProperty({
+    example: '2025-07-07T10:00:00Z',
+    description: 'Thời gian cập nhật đặt vé',
+  })
+  updatedAt: Date;
 }

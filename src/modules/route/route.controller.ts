@@ -10,7 +10,7 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { RouteService } from './route.service';
-import { CreateRouteDto } from './dto/route.dto';
+import { CreateRouteDto } from './dto/create-route.dto';
 import { Route } from './schema/route.schema';
 
 @ApiTags('Route')

@@ -40,79 +40,80 @@ export class BookingsService {
   }
 
   async bookSeats(booking: CreateBookingDto): Promise<Booking> {
-    const { tripID, seats, userID, bookingDate, phoneNumber, customerName } =
-      booking;
+    return;
+    // const { tripID, seats, userID, bookingDate, phoneNumber, customerName } =
+    //   booking;
 
-    let tripExists = await this.tripModel
-      .findOne({ template: tripID, date: bookingDate })
-      .exec();
+    // let tripExists = await this.tripModel
+    //   .findOne({ template: tripID, date: bookingDate })
+    //   .exec();
 
-    const tripSchedule = await this.scheduleModel.findById(tripID).exec();
-    if (!tripSchedule) throw new NotFoundException('Schedule not found');
+    // const tripSchedule = await this.scheduleModel.findById(tripID).exec();
+    // if (!tripSchedule) throw new NotFoundException('Schedule not found');
 
-    const price = tripSchedule.price;
+    // const price = tripSchedule.price;
 
-    // Nếu không tìm thấy chuyến đi -> Tạo mới
-    if (!tripExists) {
-      const car = await this.carModel.findById(tripSchedule.car).exec();
-      if (!car) throw new NotFoundException('Car not found');
+    // // Nếu không tìm thấy chuyến đi -> Tạo mới
+    // if (!tripExists) {
+    //   const car = await this.carModel.findById(tripSchedule.car).exec();
+    //   if (!car) throw new NotFoundException('Car not found');
 
-      tripExists = new this.tripModel({
-        template: tripID,
-        date: bookingDate,
-        bookedSeats: [],
-        availableSeats: car.seatingCapacity,
-      });
+    //   tripExists = new this.tripModel({
+    //     template: tripID,
+    //     date: bookingDate,
+    //     bookedSeats: [],
+    //     availableSeats: car.seatingCapacity,
+    //   });
 
-      await tripExists.save(); // 🔥 Lưu lại để tránh `null`
-    }
+    //   await tripExists.save(); // 🔥 Lưu lại để tránh `null`
+    // }
 
-    // 🔥 Kiểm tra lại nếu `tripExists` vẫn null
-    if (!tripExists)
-      throw new InternalServerErrorException(
-        'Failed to create or retrieve trip',
-      );
+    // // 🔥 Kiểm tra lại nếu `tripExists` vẫn null
+    // if (!tripExists)
+    //   throw new InternalServerErrorException(
+    //     'Failed to create or retrieve trip',
+    //   );
 
-    // Kiểm tra ghế còn trống
-    const isAvailable = seats.every(
-      (seat) => !tripExists.bookedSeats.includes(seat),
-    );
-    if (!isAvailable)
-      throw new BadRequestException('Some seats are already booked');
+    // // Kiểm tra ghế còn trống
+    // const isAvailable = seats.every(
+    //   (seat) => !tripExists.bookedSeats.includes(seat),
+    // );
+    // if (!isAvailable)
+    //   throw new BadRequestException('Some seats are already booked');
 
-    // Xác định thông tin khách hàng
-    let isGuest = true;
-    let finalCustomerName = customerName;
-    let finalPhoneNumber = phoneNumber;
+    // // Xác định thông tin khách hàng
+    // let isGuest = true;
+    // let finalCustomerName = customerName;
+    // let finalPhoneNumber = phoneNumber;
 
-    if (userID) {
-      isGuest = false;
-      const user = await this.userModel.findById(userID);
-      if (!user) throw new NotFoundException('User not found');
+    // if (userID) {
+    //   isGuest = false;
+    //   const user = await this.userModel.findById(userID);
+    //   if (!user) throw new NotFoundException('User not found');
 
-      finalCustomerName = user.fullName;
-      finalPhoneNumber = user.phoneNumber;
-    }
+    //   finalCustomerName = user.fullName;
+    //   finalPhoneNumber = user.phoneNumber;
+    // }
 
-    // Tạo booking
-    const newBooking = new this.bookingModel({
-      trip: tripExists._id,
-      user: userID || null,
-      customerName: finalCustomerName,
-      phoneNumber: finalPhoneNumber,
-      seats,
-      totalPrice: price * seats.length,
-      isGuest,
-      isPaid: false,
-      bookingDate: bookingDate || new Date(),
-    });
+    // // Tạo booking
+    // const newBooking = new this.bookingModel({
+    //   trip: tripExists._id,
+    //   user: userID || null,
+    //   customerName: finalCustomerName,
+    //   phoneNumber: finalPhoneNumber,
+    //   seats,
+    //   totalPrice: price * seats.length,
+    //   isGuest,
+    //   isPaid: false,
+    //   bookingDate: bookingDate || new Date(),
+    // });
 
-    tripExists.bookedSeats.push(...seats);
-    tripExists.availableSeats -= seats.length;
+    // tripExists.bookedSeats.push(...seats);
+    // tripExists.availableSeats -= seats.length;
 
-    await tripExists.save();
+    // await tripExists.save();
 
-    return await newBooking.save();
+    // return await newBooking.save();
   }
 
   async getAllBookings(

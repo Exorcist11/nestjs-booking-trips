@@ -1,12 +1,17 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Types } from 'mongoose';
 
-export class CreateTripDto {
+export class TripResponseDto {
+  @ApiProperty({
+    example: '65fa1c9e1234567890abcdef',
+    description: 'ID của chuyến đi',
+  })
+  id: string;
+
   @ApiProperty({
     example: '65fa1c9e1234567890abcdef',
     description: 'ID của lịch trình cố định',
   })
-  template: Types.ObjectId;
+  template: string;
 
   @ApiProperty({
     example: '2025-07-07T00:00:00+07:00',
@@ -15,27 +20,25 @@ export class CreateTripDto {
   date: string;
 
   @ApiProperty({
-    example: [],
+    example: ['A1', 'A2'],
     description: 'Danh sách ghế đã đặt',
     type: [String],
   })
   bookedSeats: string[];
 
   @ApiProperty({
-    example: ['A1', 'A2', 'B1', 'B2'],
+    example: ['A3', 'A4', 'B1', 'B2'],
     description: 'Danh sách ghế còn trống',
     type: [String],
-    required: false,
   })
-  availableSeats?: string[];
+  availableSeats: string[];
 
   @ApiProperty({
     example: 'scheduled',
     description:
       'Trạng thái của chuyến đi (scheduled, boarding, departed, arrived, cancelled)',
-    required: false,
   })
-  status?: string;
+  status: string;
 
   @ApiProperty({
     example: '2025-07-07T03:00:00+07:00',
@@ -57,4 +60,16 @@ export class CreateTripDto {
     required: false,
   })
   note?: string;
+
+  @ApiProperty({
+    example: '2025-07-07T10:00:00Z',
+    description: 'Thời gian tạo chuyến đi',
+  })
+  createdAt: Date;
+
+  @ApiProperty({
+    example: '2025-07-07T10:00:00Z',
+    description: 'Thời gian cập nhật chuyến đi',
+  })
+  updatedAt: Date;
 }

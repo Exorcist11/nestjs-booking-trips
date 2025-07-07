@@ -1,13 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger';
-
 import { Types } from 'mongoose';
 
-export class CreateBookingDto {
+export class UpdateBookingDto {
   @ApiProperty({
     example: '65fa1c9e1234567890abcdef',
     description: 'ID của chuyến đi',
+    required: false,
   })
-  trip: Types.ObjectId;
+  trip?: Types.ObjectId;
 
   @ApiProperty({
     example: '65fa1c9e1234567890abcdef',
@@ -26,14 +26,16 @@ export class CreateBookingDto {
   @ApiProperty({
     example: 'Nguyễn Văn A',
     description: 'Tên khách hàng',
+    required: false,
   })
-  customerName: string;
+  customerName?: string;
 
   @ApiProperty({
     example: '0123456789',
     description: 'Số điện thoại của khách hàng',
+    required: false,
   })
-  phoneNumber: string;
+  phoneNumber?: string;
 
   @ApiProperty({
     example: 'nguyenvana@example.com',
@@ -46,26 +48,30 @@ export class CreateBookingDto {
     example: ['A1', 'A2'],
     description: 'Danh sách ghế được đặt',
     type: [String],
+    required: false,
   })
-  seats: string[];
+  seats?: string[];
 
   @ApiProperty({
     example: 'Bến xe Thanh Hóa',
     description: 'Điểm đón khách',
+    required: false,
   })
-  pickupPoint: string;
+  pickupPoint?: string;
 
   @ApiProperty({
     example: 'Bến xe Giáp Bát',
     description: 'Điểm trả khách',
+    required: false,
   })
-  dropOffPoint: string;
+  dropOffPoint?: string;
 
   @ApiProperty({
     example: 300000,
     description: 'Tổng giá vé (VNĐ)',
+    required: false,
   })
-  totalPrice: number;
+  totalPrice?: number;
 
   @ApiProperty({
     example: false,

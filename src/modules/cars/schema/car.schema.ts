@@ -16,10 +16,31 @@ export class Car {
   phoneNumber: string;
 
   @Prop({ required: true })
-  seatingCapacity?: number;
+  seatingCapacity: number;
 
-  @Prop({ required: true, type: [String] })
+  @Prop({
+    required: true,
+    type: [String],
+    validate: {
+      validator: function (v: string[]) {
+        return v.length === this.seatingCapacity;
+      },
+      message: 'Seats array must match the seating capacity of the car.',
+    },
+  })
   seats: string[];
+
+  @Prop()
+  seatLayout: string;
+
+  @Prop({ default: 'active', enum: ['active', 'inactive', 'maintenace'] })
+  status: string;
+
+  @Prop()
+  model: string;
+
+  @Prop()
+  yearOfManufacture: number;
 }
 
 export type CarDocument = HydratedDocument<Car>;

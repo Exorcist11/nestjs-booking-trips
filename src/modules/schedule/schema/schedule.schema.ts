@@ -9,14 +9,25 @@ export class Schedule extends Document {
   @Prop({ required: true, type: Types.ObjectId, ref: 'Car' })
   car: Types.ObjectId;
 
-  @Prop({ required: true })
-  departureTime: string; // Giờ khởi hành (vd: "10:00")
+  @Prop({ required: true, type: Date })
+  departureTime: Date;
+
+  @Prop({ required: true, type: Date })
+  arrivalTime: Date;
 
   @Prop({ required: true })
   price: number;
 
+  @Prop({
+    required: true,
+    type: [String],
+    validate: { validator: (v) => v.length > 0 },
+  })
   @Prop({ default: true })
   isActive: boolean;
+
+  @Prop()
+  note: string;
 }
 
 export type ScheduleDocument = HydratedDocument<Schedule>;

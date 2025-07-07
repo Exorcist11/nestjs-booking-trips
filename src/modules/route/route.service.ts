@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Route, RouteDocument } from './schema/route.schema';
 import { Model } from 'mongoose';
-import { CreateRouteDto } from './dto/route.dto';
+import { CreateRouteDto } from './dto/create-route.dto';
 
 interface RouteFilter {
   departure?: { $regex: string; $options: string };
@@ -42,7 +42,8 @@ export class RouteService {
     const sortOrder = order === 'asc' ? 1 : -1;
 
     const [data, total] = await Promise.all([
-      this.routeModel.find(filter)
+      this.routeModel
+        .find(filter)
         .sort({ [sort]: sortOrder })
         .skip(index)
         .limit(limit)
@@ -63,11 +64,9 @@ export class RouteService {
 
   async update(id: string, updateDto: CreateRouteDto): Promise<Route> {
     await this.findById(id);
-    const updateRoute = await this.routeModel.findByIdAndUpdate(
-      id,
-      { $set: updateDto },
-      { new: true },
-    ).exec();
+    const updateRoute = await this.routeModel
+      .findByIdAndUpdate(id, { $set: updateDto }, { new: true })
+      .exec();
     return updateRoute;
   }
 

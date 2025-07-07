@@ -83,7 +83,8 @@ export class CarsController {
     description: 'License plate already exists.',
   })
   async createNewCar(@Body() car: CreateCarDto) {
-    return this.carsService.create(car);
+    return;
+    // return this.carsService.create(car);
   }
 
   @Delete('/:id')
@@ -116,6 +117,7 @@ export class CarsController {
     @Param('id') id: string,
     @Body() updateCarDto: CreateCarDto,
   ) {
-    return this.carsService.update(id, updateCarDto);
+    return;
+    // return this.carsService.update(id, updateCarDto);
   }
 }

@@ -1,6 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-export class CreateCarDto {
+export class CarResponseDto {
+  @ApiProperty({
+    example: '65fa1c9e1234567890abcdef',
+    description: 'ID của xe khách',
+  })
+  id: string;
+
   @ApiProperty({
     example: '36B-12345',
     description: 'Biển số xe',
@@ -41,9 +47,8 @@ export class CreateCarDto {
   @ApiProperty({
     example: 'active',
     description: 'Trạng thái của xe (active, maintenance, inactive)',
-    required: false,
   })
-  status?: string;
+  status: string;
 
   @ApiProperty({
     example: 'Hyundai Universe',
@@ -65,4 +70,16 @@ export class CreateCarDto {
     required: false,
   })
   seatLayout?: string;
+
+  @ApiProperty({
+    example: '2025-07-07T10:00:00Z',
+    description: 'Thời gian tạo xe',
+  })
+  createdAt: Date;
+
+  @ApiProperty({
+    example: '2025-07-07T10:00:00Z',
+    description: 'Thời gian cập nhật xe',
+  })
+  updatedAt: Date;
 }

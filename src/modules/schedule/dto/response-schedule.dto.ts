@@ -1,18 +1,23 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Types } from 'mongoose';
 
-export class CreateScheduleDto {
+export class ScheduleResponseDto {
+  @ApiProperty({
+    example: '65fa1c9e1234567890abcdef',
+    description: 'ID của lịch trình',
+  })
+  id: string;
+
   @ApiProperty({
     example: '65fa1c9e1234567890abcdef',
     description: 'ID của tuyến đường',
   })
-  route: Types.ObjectId;
+  route: string;
 
   @ApiProperty({
     example: '65fa1c9e1234567890abcdef',
     description: 'ID của xe khách',
   })
-  car: Types.ObjectId;
+  car: string;
 
   @ApiProperty({
     example: '2025-01-01T03:00:00+07:00',
@@ -58,4 +63,16 @@ export class CreateScheduleDto {
     required: false,
   })
   note?: string;
+
+  @ApiProperty({
+    example: '2025-07-07T10:00:00Z',
+    description: 'Thời gian tạo lịch trình',
+  })
+  createdAt: Date;
+
+  @ApiProperty({
+    example: '2025-07-07T10:00:00Z',
+    description: 'Thời gian cập nhật lịch trình',
+  })
+  updatedAt: Date;
 }
