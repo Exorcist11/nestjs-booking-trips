@@ -60,6 +60,15 @@ export class ScheduleService {
       throw new BadRequestException('Giờ khởi hành phải có định dạng HH:mm');
     }
 
+    const existingSchedule = await this.scheduleModel
+      .findOne({
+        carId: createScheduleDto.carId,
+        departureTime: createScheduleDto.departureTime,
+      })
+      .exec();
+    if (existingSchedule)
+      throw new BadRequestException('Mỗi xe chỉ chạy 1 khung giờ!');
+
     const createdSchedule = await this.scheduleModel.create(createScheduleDto);
     const scheduleResponse = plainToClass(
       ScheduleResponseDto,
