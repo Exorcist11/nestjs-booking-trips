@@ -20,6 +20,6 @@ import { Route, RouteSchema } from '../route/schema/route.schema';
   ],
   providers: [TripsService],
   controllers: [TripsController],
-  exports: [MongooseModule],
+  exports: [MongooseModule, TripsService],
 })
 export class TripsModule {}

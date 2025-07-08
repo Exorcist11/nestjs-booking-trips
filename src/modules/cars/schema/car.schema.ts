@@ -12,7 +12,7 @@ export class Car {
   @Prop({ required: true })
   ticketCollector: string;
 
-  @Prop({ required: true })
+  @Prop({ required: true, match: /^(?:\+84|0)\d{9,10}$/ })
   phoneNumber: string;
 
   @Prop({ required: true })
@@ -21,6 +21,12 @@ export class Car {
   @Prop({
     required: true,
     type: [String],
+    validate: {
+      validator: function (seats: string[]) {
+        return seats.length > 0 && seats.length === new Set(seats).size;
+      },
+      message: 'Danh sách ghế phải không rỗng và các ghế phải duy nhất',
+    },
   })
   seats: string[];
 

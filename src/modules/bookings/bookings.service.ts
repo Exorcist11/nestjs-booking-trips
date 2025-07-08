@@ -9,9 +9,13 @@ import { Booking, BookingDocument } from './schema/booking.schema';
 import { Model } from 'mongoose';
 import { Trip, TripDocument } from '../trips/schema/trip.schema';
 import { User, UserDocument } from '../users/schema/user.schema';
-import { CreateBookingDto } from './dto/create-booking.dto';
 import { Schedule, ScheduleDocument } from '../schedule/schema/schedule.schema';
 import { Car, CarDocument } from '../cars/schema/car.schema';
+import { Route, RouteDocument } from '../route/schema/route.schema';
+import { CreateBookingDto } from './dto/create-booking.dto';
+import { BookingResponseDto } from './dto/response-booking.dto';
+import { plainToClass } from 'class-transformer';
+import { TripsService } from '../trips/trips.service';
 
 @Injectable()
 export class BookingsService {
@@ -21,120 +25,188 @@ export class BookingsService {
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(Schedule.name) private scheduleModel: Model<ScheduleDocument>,
     @InjectModel(Car.name) private carModel: Model<CarDocument>,
+    @InjectModel(Route.name) private routeModel: Model<RouteDocument>,
+    private tripsService: TripsService,
   ) {}
 
-  async checkAvailableSeats(
-    tripId: string,
-    requestSeats: string[],
-  ): Promise<boolean> {
-    const trip = await this.tripModel.findById(tripId);
-    if (!trip) throw new NotFoundException('Trip not found');
+  async createBooking(
+    createBookingDto: CreateBookingDto,
+  ): Promise<BookingResponseDto> {
+    const {
+      scheduleId,
+      date,
+      seats,
+      totalPrice,
+      pickupPoint,
+      dropOffPoint,
+      customerName,
+      phoneNumber,
+      email,
+      isGuest,
+      status,
+      paymentMethod,
+      note,
+      user,
+      promotion,
+    } = createBookingDto;
 
-    const bookedSeats = trip.bookedSeats;
+    // Chuẩn hóa ngày
+    const targetDate = new Date(date);
+    targetDate.setUTCHours(0, 0, 0, 0);
+    const endOfDay = new Date(targetDate);
+    endOfDay.setUTCHours(23, 59, 59, 999);
 
-    const isAvailable = requestSeats.every(
-      (seat) => !bookedSeats.includes(seat),
-    );
-
-    return isAvailable;
-  }
-
-  async bookSeats(booking: CreateBookingDto): Promise<Booking> {
-    return;
-    // const { tripID, seats, userID, bookingDate, phoneNumber, customerName } =
-    //   booking;
-
-    // let tripExists = await this.tripModel
-    //   .findOne({ template: tripID, date: bookingDate })
-    //   .exec();
-
-    // const tripSchedule = await this.scheduleModel.findById(tripID).exec();
-    // if (!tripSchedule) throw new NotFoundException('Schedule not found');
-
-    // const price = tripSchedule.price;
-
-    // // Nếu không tìm thấy chuyến đi -> Tạo mới
-    // if (!tripExists) {
-    //   const car = await this.carModel.findById(tripSchedule.car).exec();
-    //   if (!car) throw new NotFoundException('Car not found');
-
-    //   tripExists = new this.tripModel({
-    //     template: tripID,
-    //     date: bookingDate,
-    //     bookedSeats: [],
-    //     availableSeats: car.seatingCapacity,
-    //   });
-
-    //   await tripExists.save(); // 🔥 Lưu lại để tránh `null`
-    // }
-
-    // // 🔥 Kiểm tra lại nếu `tripExists` vẫn null
-    // if (!tripExists)
-    //   throw new InternalServerErrorException(
-    //     'Failed to create or retrieve trip',
-    //   );
-
-    // // Kiểm tra ghế còn trống
-    // const isAvailable = seats.every(
-    //   (seat) => !tripExists.bookedSeats.includes(seat),
-    // );
-    // if (!isAvailable)
-    //   throw new BadRequestException('Some seats are already booked');
-
-    // // Xác định thông tin khách hàng
-    // let isGuest = true;
-    // let finalCustomerName = customerName;
-    // let finalPhoneNumber = phoneNumber;
-
-    // if (userID) {
-    //   isGuest = false;
-    //   const user = await this.userModel.findById(userID);
-    //   if (!user) throw new NotFoundException('User not found');
-
-    //   finalCustomerName = user.fullName;
-    //   finalPhoneNumber = user.phoneNumber;
-    // }
-
-    // // Tạo booking
-    // const newBooking = new this.bookingModel({
-    //   trip: tripExists._id,
-    //   user: userID || null,
-    //   customerName: finalCustomerName,
-    //   phoneNumber: finalPhoneNumber,
-    //   seats,
-    //   totalPrice: price * seats.length,
-    //   isGuest,
-    //   isPaid: false,
-    //   bookingDate: bookingDate || new Date(),
-    // });
-
-    // tripExists.bookedSeats.push(...seats);
-    // tripExists.availableSeats -= seats.length;
-
-    // await tripExists.save();
-
-    // return await newBooking.save();
-  }
-
-  async getAllBookings(
-    search?: string,
-    limit = 10,
-    index = 0,
-    order = 'asc',
-    sort = 'fullName',
-  ): Promise<Booking[]> {
-    const filter = search
-      ? { phoneNumber: { $regex: search, $options: 'i' } }
-      : {};
-
-    const sortOrder = order === 'asc' ? 1 : -1;
-
-    return this.bookingModel
-      .find(filter)
-      .sort({ [sort]: sortOrder })
-      .skip(index)
-      .limit(limit)
-      .populate('trip')
+    // Kiểm tra lịch trình
+    const schedule = await this.scheduleModel
+      .findOne({ _id: scheduleId, isActive: true, isDeleted: false })
+      .populate([
+        { path: 'routeId', select: 'price startLocation endLocation' },
+        {
+          path: 'carId',
+          select: 'seats licensePlate seatingCapacity mainDriver',
+          match: { isDeleted: false },
+        },
+      ])
       .exec();
+
+    if (!schedule || !schedule.carId) {
+      throw new NotFoundException('Lịch trình hoặc xe không tồn tại');
+    }
+
+    // Kiểm tra xem lịch trình có hợp lệ cho ngày đã chọn
+    if (
+      schedule.frequency === 'weekly' &&
+      new Date(schedule.createdAt).getDay() !== targetDate.getDay()
+    ) {
+      throw new BadRequestException(
+        'Lịch trình không hoạt động vào ngày đã chọn',
+      );
+    }
+
+    // Tìm hoặc tạo Trip
+    let tripDoc: TripDocument | null = await this.tripModel
+      .findOne({
+        template: scheduleId,
+        date: { $gte: targetDate, $lte: endOfDay },
+        isDeleted: false,
+      })
+      .exec();
+
+    if (!tripDoc) {
+      tripDoc = await this.tripsService.createTripForDate(
+        scheduleId.toString(),
+        date,
+      );
+      if (!tripDoc) {
+        throw new NotFoundException('Không thể tạo chuyến đi cho ngày này');
+      }
+    }
+
+    // Lấy thông tin xe
+    const car = schedule.carId as unknown as CarDocument;
+    const validSeats = car.seats || [];
+    const totalSeats = validSeats.length;
+
+    // Validate ghế
+    const newSeats = [...new Set(seats)]; // Loại bỏ ghế trùng lặp
+    const invalidSeats = newSeats.filter((seat) => !validSeats.includes(seat));
+    if (invalidSeats.length > 0) {
+      throw new BadRequestException(
+        `Các ghế không hợp lệ: ${invalidSeats.join(', ')}`,
+      );
+    }
+
+    // Kiểm tra ghế đã được đặt
+    const bookedSeats = tripDoc.bookedSeats || [];
+    const alreadyBookedSeats = newSeats.filter((seat) =>
+      bookedSeats.includes(seat),
+    );
+    if (alreadyBookedSeats.length > 0) {
+      throw new BadRequestException(
+        `Các ghế sau đã được đặt: ${alreadyBookedSeats.join(', ')}`,
+      );
+    }
+
+    // Kiểm tra số ghế trống
+    const availableSeatsCount =
+      tripDoc.availableSeats !== undefined
+        ? tripDoc.availableSeats
+        : totalSeats;
+    if (newSeats.length > availableSeatsCount) {
+      throw new BadRequestException(
+        `Không đủ ghế trống. Còn lại: ${availableSeatsCount} ghế`,
+      );
+    }
+
+    // Tính giá vé
+    const route = schedule.routeId as unknown as RouteDocument;
+    const ticketPrice = route?.price || 0;
+    const expectedTotalPrice = newSeats.length * ticketPrice;
+
+    if (totalPrice !== expectedTotalPrice) {
+      throw new BadRequestException(
+        `Tổng giá không hợp lệ. Dự kiến: ${expectedTotalPrice} VNĐ cho ${newSeats.length} ghế`,
+      );
+    }
+
+    // Cập nhật Trip
+    const updatedTrip = await this.tripModel
+      .findByIdAndUpdate(
+        tripDoc._id,
+        {
+          $addToSet: { bookedSeats: { $each: newSeats } },
+          availableSeats: availableSeatsCount - newSeats.length,
+        },
+        { new: true },
+      )
+      .exec();
+
+    if (!updatedTrip) {
+      throw new NotFoundException('Không thể cập nhật chuyến đi');
+    }
+
+    // Tạo Booking
+    const booking = new this.bookingModel({
+      trip: tripDoc._id,
+      user: isGuest ? null : user,
+      promotion,
+      customerName,
+      phoneNumber,
+      email,
+      seats: newSeats,
+      pickupPoint,
+      dropOffPoint,
+      totalPrice,
+      isGuest: isGuest || true,
+      status: status || 'pending',
+      paymentMethod: paymentMethod || 'cash',
+      note,
+      createdBy: user || null,
+    });
+
+    const savedBooking = await booking.save();
+
+    // Trả về BookingResponseDto
+    return plainToClass(BookingResponseDto, {
+      id: savedBooking._id.toString(),
+      trip: savedBooking.trip.toString(),
+      user: savedBooking.user?.toString(),
+      promotion: savedBooking.promotion?.toString(),
+      customerName: savedBooking.customerName,
+      phoneNumber: savedBooking.phoneNumber,
+      email: savedBooking.email,
+      seats: savedBooking.seats,
+      pickupPoint: savedBooking.pickupPoint,
+      dropOffPoint: savedBooking.dropOffPoint,
+      totalPrice: savedBooking.totalPrice,
+      isGuest: savedBooking.isGuest,
+      bookingDate: date,
+      status: savedBooking.status,
+      isPaid: savedBooking.isPaid,
+      paymentMethod: savedBooking.paymentMethod,
+      note: savedBooking.note,
+      createdAt: savedBooking.createdAt.toISOString(),
+      updatedAt: savedBooking.updatedAt.toISOString(),
+    });
   }
 }

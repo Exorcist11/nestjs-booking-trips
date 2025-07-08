@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Trip, TripDocument } from './schema/trip.schema';
@@ -8,7 +12,6 @@ import { Schedule, ScheduleDocument } from '../schedule/schema/schedule.schema';
 import { SearchTripDto } from './dto/search-trip.dto';
 import { TripResponseDto } from './dto/response-trip.dto';
 import { plainToClass } from 'class-transformer';
-import { PlainCar } from './interface/car.interface';
 
 @Injectable()
 export class TripsService {
@@ -23,45 +26,69 @@ export class TripsService {
     scheduleId: string,
     date: string,
   ): Promise<TripDocument> {
+    // Chuẩn hóa ngày
+    const targetDate = new Date(date);
+    targetDate.setUTCHours(0, 0, 0, 0);
+    const endOfDay = new Date(targetDate);
+    endOfDay.setUTCHours(23, 59, 59, 999);
+
+    // Kiểm tra lịch trình
     const schedule = await this.scheduleModel
-      .findOne({
-        _id: scheduleId,
-        isActive: true,
-        isDeleted: false,
+      .findOne({ _id: scheduleId, isActive: true, isDeleted: false })
+      .populate({
+        path: 'carId',
+        select: 'seats licensePlate seatingCapacity',
+        match: { isDeleted: false },
       })
-      .populate('routeId')
-      .populate('carId')
       .exec();
-    if (!schedule) {
-      throw new NotFoundException(`Lịch trình không tồn tại`);
+
+    if (!schedule || !schedule.carId) {
+      throw new NotFoundException('Lịch trình hoặc xe không tồn tại');
     }
 
-    const targetDate = new Date(date);
-    targetDate.setHours(0, 0, 0, 0);
+    // Kiểm tra tần suất
+    if (schedule.frequency === 'weekly') {
+      const scheduleDay = new Date(schedule.createdAt).getDay();
+      const targetDay = targetDate.getDay();
+      if (scheduleDay !== targetDay) {
+        throw new BadRequestException(
+          'Lịch trình không hoạt động vào ngày này',
+        );
+      }
+    }
 
-    const existingTrip = await this.tripModel
+    // Kiểm tra xem Trip đã tồn tại
+    let trip = await this.tripModel
       .findOne({
-        template: schedule._id,
-        date: targetDate,
+        template: scheduleId,
+        date: { $gte: targetDate, $lte: endOfDay },
+        isDeleted: false,
       })
       .exec();
 
-    if (existingTrip) return existingTrip;
+    if (trip) {
+      return trip;
+    }
 
-    const car = await this.carModel
-      .findOne({ _id: schedule.carId, isDeleted: false })
-      .exec();
-    if (!car) throw new NotFoundException(`Xe không tồn tại`);
+    // Lấy thông tin xe
+    const car = schedule.carId as unknown as CarDocument;
+    const totalSeats = car.seats?.length || 0;
 
-    const trip = await this.tripModel.create({
-      template: schedule._id,
+    if (totalSeats === 0) {
+      throw new BadRequestException('Xe không có danh sách ghế hợp lệ');
+    }
+
+    // Tạo Trip mới
+    trip = new this.tripModel({
+      template: scheduleId,
       date: targetDate,
-      availableSeats: car.seats,
       bookedSeats: [],
-      status: 'schedule',
-      note: `Chuyến đi tạo cho ngày ${date}`,
+      availableSeats: totalSeats,
+      status: 'scheduled',
+      isDeleted: false,
     });
-    return trip;
+
+    return trip.save();
   }
 
   async findDaily(searchTripsDto: SearchTripDto): Promise<TripResponseDto[]> {
@@ -74,31 +101,23 @@ export class TripsService {
     } = searchTripsDto;
     const skip = (page - 1) * limit;
 
-    const targetDate = new Date(date);
-    targetDate.setUTCHours(0, 0, 0, 0);
+    const inputDate = new Date(date);
+    const targetDate = new Date(
+      inputDate.getFullYear(),
+      inputDate.getMonth(),
+      inputDate.getDate(),
+      0,
+      0,
+      0,
+      0,
+    );
     const endOfDay = new Date(targetDate);
-    endOfDay.setUTCHours(23, 59, 59, 999);
-
-    const normalizeString = (str: string) =>
-      str
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .toLowerCase();
+    endOfDay.setHours(23, 59, 59, 999);
 
     const routes = await this.routeModel
       .find({
-        ...(startLocation && {
-          startLocation: {
-            $regex: normalizeString(startLocation),
-            $options: 'i',
-          },
-        }),
-        ...(endLocation && {
-          endLocation: {
-            $regex: normalizeString(endLocation),
-            $options: 'i',
-          },
-        }),
+        ...(startLocation && { startLocation: new RegExp(startLocation, 'i') }),
+        ...(endLocation && { endLocation: new RegExp(endLocation, 'i') }),
         isDeleted: false,
       })
       .select('_id price startLocation endLocation duration')
@@ -130,17 +149,19 @@ export class TripsService {
         const scheduleDay = new Date(schedule.createdAt).getDay();
         return targetDate.getDay() === scheduleDay;
       }
-      if (schedule.frequency === 'custom') {
-        return true; // Thêm logic cho custom nếu cần
-      }
+      if (schedule.frequency === 'custom') return true;
       return false;
     });
 
     const scheduleIds = validSchedules.map((schedule) => schedule._id);
+
     const trips = await this.tripModel
       .find({
         template: { $in: scheduleIds },
-        date: { $gte: targetDate, $lte: endOfDay },
+        date: {
+          $gte: targetDate,
+          $lt: endOfDay,
+        },
         status: { $ne: 'cancelled' },
       })
       .select(
@@ -148,47 +169,24 @@ export class TripsService {
       )
       .lean();
 
-    const virtualTrips: TripResponseDto[] = validSchedules
-      .filter(
-        (schedule) =>
-          !trips.some(
-            (trip) => trip.template.toString() === schedule._id.toString(),
-          ),
-      )
-      .map((schedule) => {
-        const route = routes.find(
-          (r) => r._id.toString() === schedule.routeId.toString(),
+    // Map để tra cứu nhanh template
+    const tripsByTemplate = new Map<string, any>();
+    trips.forEach((trip) => {
+      tripsByTemplate.set(trip.template.toString(), trip);
+    });
+
+    // Tập hợp các key carId-departureTime-date để loại virtual trùng
+    const realTripKeys = new Set(
+      trips.map((trip) => {
+        const schedule = validSchedules.find(
+          (s) => s._id.toString() === trip.template.toString(),
         );
-        const car = schedule.carId as unknown as PlainCar | null;
+        const carId = (schedule?.carId as any)?._id?.toString();
+        return `${carId}-${schedule?.departureTime}`;
+      }),
+    );
 
-        return plainToClass(TripResponseDto, {
-          id: `virtual-${schedule._id}-${date}`,
-          template: schedule._id.toString(),
-          date: targetDate.toISOString(),
-          bookedSeats: [],
-          availableSeats: car.seats,
-          status: 'scheduled',
-          actualDepartureTime: null,
-          actualArrivalTime: null,
-          note: `Chuyến đi ảo cho ngày ${date}`,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          startLocation: route?.startLocation,
-          endLocation: route?.endLocation,
-          duration: route?.duration,
-          price: route?.price,
-          departureTime: schedule.departureTime,
-          car: car
-            ? {
-                licensePlate: car.licensePlate,
-                seatingCapacity: car.seatingCapacity,
-                seats: car.seats,
-                mainDriver: car.mainDriver,
-              }
-            : null,
-        });
-      });
-
+    // Chuẩn bị dữ liệu cho realTrips
     const realTrips: TripResponseDto[] = trips.map((trip) => {
       const schedule = validSchedules.find(
         (s) => s._id.toString() === trip.template.toString(),
@@ -196,19 +194,19 @@ export class TripsService {
       const route = routes.find(
         (r) => r._id.toString() === schedule?.routeId.toString(),
       );
-      const car = schedule?.carId as unknown as PlainCar | null; // Ép kiểu an toàn
-      const totalSeats = car?.seats || 40;
+      const car = schedule?.carId as unknown as CarDocument | null;
+
+      const validSeats = car?.seats || [];
       const bookedSeats = trip.bookedSeats || [];
-      const availableSeatsList = Array.from(
-        { length: totalSeats },
-        (_, i) => `S${i + 1}`,
-      ).filter((seat) => !bookedSeats.includes(seat));
+      const availableSeatsList = validSeats.filter(
+        (seat) => !bookedSeats.includes(seat),
+      );
 
       return plainToClass(TripResponseDto, {
         id: trip._id.toString(),
         template: trip.template.toString(),
         date: trip.date.toISOString(),
-        bookedSeats: trip.bookedSeats,
+        bookedSeats: bookedSeats,
         availableSeats: availableSeatsList,
         status: trip.status,
         actualDepartureTime: trip.actualDepartureTime?.toISOString(),
@@ -231,6 +229,49 @@ export class TripsService {
           : null,
       });
     });
+
+    // Generate virtual trips, excluding those that conflict with real trips
+    const virtualTrips: TripResponseDto[] = validSchedules
+      .filter((schedule) => {
+        const scheduleIdStr = schedule._id.toString();
+        const carId = (schedule.carId as any)?._id?.toString();
+        const key = `${carId}-${schedule.departureTime}`;
+
+        return !tripsByTemplate.has(scheduleIdStr) && !realTripKeys.has(key);
+      })
+      .map((schedule) => {
+        const route = routes.find(
+          (r) => r._id.toString() === schedule.routeId.toString(),
+        );
+        const car = schedule.carId as unknown as CarDocument | null;
+
+        return plainToClass(TripResponseDto, {
+          id: `virtual-${schedule._id}-${targetDate.toISOString()}`,
+          template: schedule._id.toString(),
+          date: targetDate.toISOString(),
+          bookedSeats: [],
+          availableSeats: car?.seats || [],
+          status: 'scheduled',
+          actualDepartureTime: null,
+          actualArrivalTime: null,
+          note: `Chuyến đi ảo cho ngày ${targetDate.toLocaleDateString('vi-VN')}`,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          startLocation: route?.startLocation,
+          endLocation: route?.endLocation,
+          duration: route?.duration,
+          price: route?.price,
+          departureTime: schedule.departureTime,
+          car: car
+            ? {
+                licensePlate: car.licensePlate,
+                seatingCapacity: car.seatingCapacity,
+                seats: car.seats,
+                mainDriver: car.mainDriver,
+              }
+            : null,
+        });
+      });
 
     return [...realTrips, ...virtualTrips]
       .sort((a, b) => a.departureTime.localeCompare(b.departureTime))
