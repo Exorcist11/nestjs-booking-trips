@@ -23,6 +23,12 @@ export class Schedule extends Document {
 
   @Prop()
   deletedAt?: Date;
+
+  @Prop()
+  createdAt: Date;
+
+  @Prop()
+  updatedAt: Date;
 }
 
 export type ScheduleDocument = HydratedDocument<Schedule>;

@@ -33,6 +33,12 @@ export class Trip {
 
   @Prop()
   note: string;
+
+  @Prop()
+  createdAt: Date;
+
+  @Prop()
+  updatedAt: Date;
 }
 
 export type TripDocument = HydratedDocument<Trip>;
