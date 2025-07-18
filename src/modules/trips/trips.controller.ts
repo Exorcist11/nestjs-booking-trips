@@ -1,8 +1,22 @@
-import { Controller, Get, HttpStatus, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  HttpStatus,
+  NotFoundException,
+  Param,
+  Query,
+} from '@nestjs/common';
 import { TripsService } from './trips.service';
-import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiQuery,
+  ApiParam,
+} from '@nestjs/swagger';
 import { TripResponseDto } from './dto/response-trip.dto';
 import { SearchTripDto } from './dto/search-trip.dto';
+import { TripDetailsDto } from './dto/detail-trip.dto';
 
 @ApiTags('Trips')
 @Controller('trips')
@@ -54,5 +68,27 @@ export class TripsController {
     @Query() searchTripsDto: SearchTripDto,
   ): Promise<TripResponseDto[]> {
     return this.tripsService.findDaily(searchTripsDto);
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Lấy thông tin chi tiết chuyến xe theo ID' })
+  @ApiParam({
+    name: 'id',
+    description: 'Mã chuyến xe (có thể là thực hoặc ảo)',
+    type: String,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Thông tin chi tiết chuyến xe',
+    type: TripDetailsDto,
+  })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy chuyến xe' })
+  async getTripDetails(@Param('id') id: string): Promise<TripDetailsDto> {
+    try {
+      const trip = await this.tripsService.getTripDetails(id);
+      return trip;
+    } catch (error) {
+      throw new NotFoundException('Không tìm thấy chuyến xe');
+    }
   }
 }

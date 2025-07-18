@@ -12,6 +12,7 @@ import { Schedule, ScheduleDocument } from '../schedule/schema/schedule.schema';
 import { SearchTripDto } from './dto/search-trip.dto';
 import { TripResponseDto } from './dto/response-trip.dto';
 import { plainToClass } from 'class-transformer';
+import { TripDetailsDto } from './dto/detail-trip.dto';
 
 @Injectable()
 export class TripsService {
@@ -21,6 +22,16 @@ export class TripsService {
     @InjectModel(Route.name) private routeModel: Model<RouteDocument>,
     @InjectModel(Schedule.name) private scheduleModel: Model<ScheduleDocument>,
   ) {}
+
+  private isScheduleValidForDate(schedule: any, targetDate: Date): boolean {
+    if (schedule.frequency === 'daily') return true;
+    if (schedule.frequency === 'weekly') {
+      const scheduleDay = new Date(schedule.createdAt).getDay();
+      return targetDate.getDay() === scheduleDay;
+    }
+    if (schedule.frequency === 'custom') return true;
+    return false;
+  }
 
   async createTripForDate(
     scheduleId: string,
@@ -276,5 +287,167 @@ export class TripsService {
     return [...realTrips, ...virtualTrips]
       .sort((a, b) => a.departureTime.localeCompare(b.departureTime))
       .slice(skip, skip + limit);
+  }
+
+  async getTripDetails(tripId: string): Promise<TripDetailsDto> {
+    if (tripId.startsWith('virtual-')) {
+      const [, scheduleId, dateStr] = tripId.split('-', 3);
+      const targetDate = new Date(dateStr);
+      if (isNaN(targetDate.getTime())) {
+        throw new NotFoundException('Lịch trình không tồn tại');
+      }
+
+      // Fetch schedule with populated route and car
+      const schedule = await this.scheduleModel
+        .findById(scheduleId)
+        .populate<{ routeId: RouteDocument; carId: CarDocument }>([
+          { path: 'routeId', model: 'Route', match: { isDeleted: false } },
+          { path: 'carId', model: 'Car', match: { isDeleted: false } },
+        ])
+        .lean()
+        .exec();
+
+      if (!schedule || !schedule.routeId || !schedule.carId) {
+        throw new NotFoundException(
+          'Không tìm thấy lịch trình hoặc dữ liệu liên quan',
+        );
+      }
+
+      // Validate schedule frequency
+      const isValidSchedule = this.isScheduleValidForDate(schedule, targetDate);
+      if (!isValidSchedule) {
+        throw new NotFoundException(
+          'Lịch trình không hợp lệ vào ngày đã chỉ định',
+        );
+      }
+
+      // Check for conflicting real trips
+      const conflictingTrip = await this.tripModel
+        .findOne({
+          template: schedule._id,
+          date: {
+            $gte: new Date(
+              targetDate.getFullYear(),
+              targetDate.getMonth(),
+              targetDate.getDate(),
+              0,
+              0,
+              0,
+            ),
+            $lt: new Date(
+              targetDate.getFullYear(),
+              targetDate.getMonth(),
+              targetDate.getDate(),
+              23,
+              59,
+              59,
+              999,
+            ),
+          },
+          status: { $ne: 'cancelled' },
+        })
+        .lean()
+        .exec();
+
+      if (conflictingTrip) {
+        throw new NotFoundException(
+          'Có một chuyến đi thực tế cho lịch trình và ngày này',
+        );
+      }
+
+      const seats = schedule.carId.seats.map((seatId: string) => ({
+        id: seatId,
+        isBooked: false,
+      }));
+
+      return plainToClass(TripDetailsDto, {
+        tripId,
+        startLocation: schedule.routeId.startLocation,
+        endLocation: schedule.routeId.endLocation,
+        departureTime: schedule.departureTime,
+        date: targetDate.toISOString(),
+        duration: schedule.routeId.duration,
+        price: schedule.routeId.price,
+        status: 'scheduled',
+        note: `Chuyến đi ảo cho ngày ${targetDate.toLocaleDateString('vi-VN')}`,
+        availableSeats: schedule.carId.seatingCapacity,
+        bookedSeats: [],
+        seats,
+        seatLayout: schedule.carId.seatLayout || 'Unknown',
+        carInfo: {
+          licensePlate: schedule.carId.licensePlate,
+          mainDriver: schedule.carId.mainDriver,
+          ticketCollector: schedule.carId.ticketCollector,
+          phoneNumber: schedule.carId.phoneNumber,
+          model: schedule.carId.model || 'Unknown',
+          yearOfManufacture: schedule.carId.yearOfManufacture || null,
+        },
+        actualDepartureTime: null,
+        actualArrivalTime: null,
+      });
+    }
+
+    // Handle real trip
+    const trip = await this.tripModel
+      .findById(tripId)
+      .populate<{
+        template: ScheduleDocument & {
+          routeId: RouteDocument;
+          carId: CarDocument;
+        };
+      }>({
+        path: 'template',
+        model: 'Schedule',
+        match: { isDeleted: false },
+        populate: [
+          { path: 'routeId', model: 'Route', match: { isDeleted: false } },
+          { path: 'carId', model: 'Car', match: { isDeleted: false } },
+        ],
+      })
+      .lean()
+      .exec();
+
+    if (
+      !trip ||
+      !trip.template ||
+      !trip.template.routeId ||
+      !trip.template.carId
+    ) {
+      throw new NotFoundException(
+        'Không tìm thấy chuyến xe hoặc dữ liệu liên quan',
+      );
+    }
+
+    const bookedSeats = trip.bookedSeats || [];
+    const seats = trip.template.carId.seats.map((seatId: string) => ({
+      id: seatId,
+      isBooked: bookedSeats.includes(seatId),
+    }));
+
+    return plainToClass(TripDetailsDto, {
+      tripId: trip._id.toString(),
+      startLocation: trip.template.routeId.startLocation,
+      endLocation: trip.template.routeId.endLocation,
+      departureTime: trip.template.departureTime,
+      date: trip.date.toISOString(),
+      duration: trip.template.routeId.duration,
+      price: trip.template.routeId.price,
+      status: trip.status,
+      note: trip.note || null,
+      availableSeats: trip.template.carId.seatingCapacity - bookedSeats.length,
+      bookedSeats,
+      seats,
+      seatLayout: trip.template.carId.seatLayout || 'Unknown',
+      carInfo: {
+        licensePlate: trip.template.carId.licensePlate,
+        mainDriver: trip.template.carId.mainDriver,
+        ticketCollector: trip.template.carId.ticketCollector,
+        phoneNumber: trip.template.carId.phoneNumber,
+        model: trip.template.carId.model || 'Unknown',
+        yearOfManufacture: trip.template.carId.yearOfManufacture || null,
+      },
+      actualDepartureTime: trip.actualDepartureTime?.toISOString() || null,
+      actualArrivalTime: trip.actualArrivalTime?.toISOString() || null,
+    });
   }
 }
