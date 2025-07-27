@@ -293,7 +293,7 @@ export class TripsService {
 
   async getTripDetails(tripId: string): Promise<TripDetailsDto> {
     if (tripId.startsWith('virtual-')) {
-      const [, scheduleId, dateStr] = tripId.split('-', 3);
+      const [, scheduleId, dateStr, mm, dd] = tripId.split('-', 5);
       const targetDate = new Date(dateStr);
       if (isNaN(targetDate.getTime())) {
         throw new NotFoundException('Lịch trình không tồn tại');
@@ -367,7 +367,7 @@ export class TripsService {
         startLocation: schedule.routeId.startLocation,
         endLocation: schedule.routeId.endLocation,
         departureTime: schedule.departureTime,
-        date: targetDate.toISOString(),
+        date: `${dateStr}-${mm}-${dd}`,
         duration: schedule.routeId.duration,
         price: schedule.routeId.price,
         status: 'scheduled',
