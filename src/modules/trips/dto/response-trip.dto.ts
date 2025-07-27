@@ -12,6 +12,9 @@ class CarDto {
 
   @ApiProperty({ example: 'Nguyen Van Tai' })
   mainDriver: string;
+
+  @ApiProperty({ example: '091992351' })
+  phoneNumber: string;
 }
 
 export class TripResponseDto {

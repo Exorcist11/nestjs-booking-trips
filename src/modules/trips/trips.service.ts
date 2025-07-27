@@ -147,9 +147,9 @@ export class TripsService {
       .populate({
         path: 'carId',
         match: { isDeleted: false },
-        select: 'licensePlate seatingCapacity seats mainDriver',
+        select: 'licensePlate seatingCapacity seats mainDriver phoneNumber',
       })
-      .select('_id departureTime routeId carId frequency createdAt')
+      .select('_id departureTime routeId carId frequency createdAt ')
       .lean();
 
     if (!schedules.length) return [];
@@ -236,6 +236,7 @@ export class TripsService {
               seatingCapacity: car.seatingCapacity,
               seats: car.seats,
               mainDriver: car.mainDriver,
+              phoneNumber: car.phoneNumber,
             }
           : null,
       });
@@ -279,6 +280,7 @@ export class TripsService {
                 seatingCapacity: car.seatingCapacity,
                 seats: car.seats,
                 mainDriver: car.mainDriver,
+                phoneNumber: car.phoneNumber,
               }
             : null,
         });
